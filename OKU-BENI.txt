@@ -1,0 +1,18 @@
+Hamle Hamle: iPhone için çevrimdışı uygulama
+
+iOS, ana ekran uygulamalarını yalnızca bir web adresinden kurar. Bu yüzden bu klasörün bir kez HTTPS üzerinden yayınlanması gerekir. Kurulduktan sonra internet olmadan açılır.
+
+GitHub Pages ile (ücretsiz):
+1. GitHub'da yeni bir depo oluştur (ör. hamle-hamle). Ücretsiz planda Pages için depo herkese açık olmalı; dosyalarda kişisel verin yok, ilerlemen yalnızca cihazında tutulur.
+2. Bu klasördeki tüm dosyaları deponun ana dizinine yükle.
+3. Settings > Pages > Branch: main, klasör: / (root) > Save.
+4. Birkaç dakika sonra verilen adresi iPhone'da Safari ile aç.
+5. Paylaş > Ana Ekrana Ekle.
+6. Ana ekrandaki simgeden bir kez aç ve birkaç saniye bekle. Bundan sonra internetsiz de çalışır.
+
+Claude Code ile: bu klasörde "bunu GitHub Pages'e yayınla" demen yeterli. Netlify, Vercel ya da Cloudflare Pages gibi başka bir statik barındırma da olur.
+
+Notlar:
+- Bu sürümün ilerlemesi kendi kaydındadır. Çevrimiçi sürümle taşımak için iki tarafta da Ayarlar > İlerlemeyi dışa aktar / İçe aktar. İki taraf birleştirilir.
+- Koç (Claude'a soru) bu sürümde yok; internet ve Claude hesabı gerektirir.
+- Güncelleme: dosyaları yenileriyle değiştir; uygulama bir sonraki açılışta güncellenir.

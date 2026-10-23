@@ -1,0 +1,29 @@
+{
+ "name": "Hamle Hamle",
+ "short_name": "Hamle Hamle",
+ "description": "Kişisel satranç antrenörü",
+ "lang": "tr",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#F1F3EF",
+ "theme_color": "#17222A",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
