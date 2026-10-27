@@ -274,6 +274,16 @@ a.card:hover{ border-color:var(--ink-3); }
 .callout.hunt{ border-left-color:var(--amber); }
 .callout.hunt .prompt{ margin:4px 0; }
 
+.chatlog{ max-height:46vh; overflow:auto; margin:6px 0; }
+.chatlog:empty{ display:none; }
+.chat-q{ font-weight:600; margin:14px 0 4px; }
+.chat-a{ white-space:pre-wrap; font:400 1.02rem/1.62 var(--serif); }
+.qrow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:8px 0; border-bottom:1px solid var(--line-2); }
+.qrow > span{ flex:1 1 180px; }
+.qlist{ margin:6px 0 10px; padding-left:1.1em; } .qlist li{ margin:4px 0; }
+.qitem{ border-top:1px solid var(--line); padding:14px 0; }
+.steps-list{ margin:6px 0 10px; padding-left:1.3em; } .steps-list li{ margin:3px 0; }
+
 </style>
 </head>
 <body>
@@ -2466,6 +2476,188 @@ VIEWS.ayarlar = (main) => { _ayarlar3(main); main.append(h('p', { class: 'small 
 
 window.HH.SF = SF; window.HH.detectThreat = detectThreat; window.HH.reviewGame = reviewGame;
 SF.init().then((ok) => { if (ok) { const sn = $('#sync-note'); if (sn) sn.textContent += ', Stockfish açık'; } });
+
+</script>
+<script>
+/* Hamle Hamle — ek modül 4: koçla sürekli konuşma, öğrenci profili, "sonra sor" kuyruğu, Claude projesi */
+'use strict';
+
+const DEFAULT_NOTES = 'Hatalarımın çoğu rakibin tehdidini görmememden geliyor (sessiz tehditler, şahlı taktikler). Beyazla 1.e4 oynuyorum. Bota karşı seviyem 5 civarı. Açılışta erken f-piyonu ve kenar piyonu oynama, geç rok alışkanlıklarım var.';
+const PROJECT_INSTR = `${COACH_RULES}\n- Bu projede her mesaj ÖĞRENCİ PROFİLİ ve POZİSYON VERİLERİ ile gelir; cevabını profile göre kişiselleştir.\n- Birden fazla pozisyon varsa her birine ayrı başlıkla cevap ver.\n- Önceki konuşmalarımızı dikkate al; aynı tip hata tekrar ediyorsa bunu açıkça söyle.`;
+const coachQ = () => Store.s.coachQ || (Store.s.coachQ = []);
+function studentProfile() {
+  const S = Store.s, wk = weakThemes(4).map((w) => `${THEME_TR[w.t] || w.t} %${Math.round(w.acc * 100)}`).join(', ');
+  const rv = (S.games || []).filter((g) => g.review).slice(0, 5), H = S.hunt;
+  const q = rv.length ? `son ${rv.length} oyunda ortalama isabet %${Math.round(rv.reduce((a, g) => a + g.review.acc, 0) / rv.length)}, oyun başına ${(rv.reduce((a, g) => a + g.review.blunders + g.review.mistakes, 0) / rv.length).toFixed(1)} ciddi hata` : 'henüz incelenmiş oyun yok';
+  const notes = (S.settings.coachNotes || '').trim();
+  return `ÖĞRENCİ PROFİLİ (cevabını buna göre kişiselleştir; uygunsa zayıf konusuna ya da tekrar eden hatasına bağla): bulmaca puanı ${S.profile.rating}; zayıf bulmaca konuları: ${wk || 'henüz belirsiz'}; ${q}${H && H.n ? `; tehdit avında %${Math.round((100 * H.ok) / H.n)} isabet (${H.n} soru)` : ''}; bota karşı seviye ${suggestLevel()}.${notes ? ' Öğrencinin kendi notu: ' + notes : ''}`;
+}
+async function apiMessages(system, messages, quick, onText, signal) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: quick ? 'claude-haiku-5-5' : 'claude-sonnet-5-5', max_tokens: quick ? 700 : 1200, stream: true, system, messages: messages.map((m) => ({ role: m.role, content: m.content })) }) });
+  if (!res.ok) { let msg = ''; try { const j = await res.json(); msg = (j.error && j.error.message) || ''; } catch (e) { /* no body */ } const er = new Error(msg); er.status = res.status; throw er; }
+  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '', text = '';
+  for (;;) {
+    const { value, done } = await rd.read(); if (done) break;
+    buf += dec.decode(value, { stream: true }); let n;
+    while ((n = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, n).trim(); buf = buf.slice(n + 1);
+      if (!line.startsWith('data:')) continue; let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+      if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') { text += ev.delta.text; if (onText) onText(text); }
+      else if (ev.type === 'error') { const er = new Error((ev.error && ev.error.message) || ''); er.status = ev.error && ev.error.type === 'overloaded_error' ? 529 : 500; throw er; }
+    }
+  }
+  return text;
+}
+async function sampleChat(thread, quick, onText, signal) {
+  const prompt = `${COACH_RULES}\n\n` + thread.map((t, i) => (t.role === 'user' ? (i === 0 ? t.content : `DEVAM SORUSU: ${t.content}`) : `KOÇUN ÖNCEKİ CEVABI:\n${t.content}`)).join('\n\n');
+  const fn = Coach.fn, r = await fn(prompt, { signal, onText: ({ text }) => onText(text), modelTier: quick ? 'quick' : 'default' });
+  return r.text;
+}
+function sampleErrorText(e) {
+  const c = e && e.code;
+  if (c === 'cancelled') return (e.text || '') + '\n(Durduruldu.)';
+  if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(c)) { Coach.disabled = true; applyCoachClass(); return 'Koç bu hesapta ya da görünümde kullanılamıyor.'; }
+  if (c === 'rate_limited') return 'Şu an çok fazla istek var ya da kullanım sınırına ulaşıldı. Biraz sonra tekrar dene.';
+  return 'Bağlantı sorunu oldu. Tekrar dene.';
+}
+function logAnswer(ctx, q, a) { const Q = coachQ(); Q.unshift({ id: Date.now() + Math.random(), fen: ctx.fen, title: ctx.title || '', q, answer: a, status: 'cevaplandı', created: today() }); Store.s.coachQ = Q.slice(0, 60); Store.touch(); }
+
+// in-app conversation (Claude inside claude.ai, or the user's own API key)
+function openCoachChat(ctx, mode) {
+  const m = modal('Koça sor');
+  m.append(h('p', { class: 'small muted', text: 'Koç seni tanıyor: zayıf konuların, son oyunların ve notların soruya ekleniyor. Cevaptan sonra devam sorusu sorabilirsin.' }));
+  const presets = h('div', { class: 'actions' }), log = h('div', { class: 'chatlog', 'aria-live': 'polite' }), ta = h('textarea', { rows: '2', placeholder: 'Kendi sorunu yaz', 'aria-label': 'Soru', style: { minHeight: '64px' } });
+  const stopB = btn('Durdur', () => { if (ctl) ctl.abort(); }, 'ghost'); stopB.hidden = true;
+  const thread = []; let ctl = null, tier = true;
+  const factsP = coachFacts(ctx.fen).catch(() => 'FEN: ' + ctx.fen);
+  async function ask(q, quick) {
+    if (!q || ctl) return;
+    if (!thread.length) tier = quick;
+    const f = await factsP;
+    thread.push({ role: 'user', content: thread.length ? q : `POZİSYON VERİLERİ\n${f}${ctx.extra ? '\n' + ctx.extra : ''}\n\nSORU: ${q}` });
+    const aEl = h('div', { class: 'chat-a', text: 'Düşünüyor…' }); log.append(h('p', { class: 'chat-q', text: q }), aEl); ta.value = ''; presets.hidden = true;
+    const my = new AbortController(); ctl = my; stopB.hidden = false;
+    try {
+      const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; }, my.signal);
+      aEl.textContent = t || 'Boş cevap geldi; tekrar sor.'; thread.push({ role: 'assistant', content: t || '' }); if (t) logAnswer(ctx, q, t);
+    } catch (e) { thread.pop(); aEl.textContent = mode === 'api' ? (e && e.name === 'AbortError' ? 'Durduruldu.' : apiErrorText(e)) : sampleErrorText(e); }
+    finally { ctl = null; stopB.hidden = true; ta.placeholder = 'Devam sorusu sor (ör. “Peki fili geri çekseydim?”)'; log.scrollTop = log.scrollHeight; }
+  }
+  (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, true))));
+  m.append(presets, log, h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Sor', () => ask(ta.value.trim(), false), 'primary'), stopB));
+  m.onclose = () => { if (ctl) ctl.abort(); };
+}
+
+// without a key: hand the question to Claude (ideally to the user's "Satranç koçum" project)
+function handoffText(blocks) { const proj = Store.s.settings.claudeProject; return (proj ? '' : COACH_RULES + '\n\n') + studentProfile() + '\n\n' + blocks.join('\n\n---\n\n'); }
+function handoffSend(text, out) {
+  const proj = Store.s.settings.claudeProject, url = proj || 'https://claude.ai/new'; let copied = false;
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).catch(() => {}); copied = true; } } catch (e) { copied = false; }
+  const win = window.open(url, '_blank'); if (win) { try { win.opener = null; } catch (e) { /* ignore */ } }
+  out.innerHTML = '';
+  out.append(h('p', null, (copied ? 'Soru panoya kopyalandı. ' : '') + (proj ? '“Satranç koçum” projen açılıyor; yeni sohbete yapıştırıp gönder.' : 'Claude açılıyor; mesaj kutusuna yapıştırıp gönder.')));
+  if (!win) out.append(h('p', null, h('a', { href: url, target: '_blank', rel: 'noopener', text: 'Claude’u aç' })));
+  if (!copied) { const t2 = h('textarea', { readonly: true, 'aria-label': 'Soru metni' }); t2.value = text; out.append(t2); }
+  if (!proj) out.append(h('p', { class: 'small muted', text: 'İpucu: Ayarlar’dan bir “Satranç koçum” projesi bağlarsan sorular seni tanıyan aynı projeye gider.' }));
+}
+function openCoachHandoff(ctx) {
+  const m = modal('Koça sor'), out = h('div', { class: 'answer', 'aria-live': 'polite' }), ta = h('textarea', { rows: '2', placeholder: 'Kendi sorunu yaz', 'aria-label': 'Soru', style: { minHeight: '64px' } });
+  let facts = null; const factsP = coachFacts(ctx.fen).catch(() => 'FEN: ' + ctx.fen).then((t) => (facts = t));
+  const block = (f, q) => `POZİSYON VERİLERİ\n${f}${ctx.extra ? '\n' + ctx.extra : ''}\n\nSORU: ${q}`;
+  const send = (q) => { if (!q) return; if (facts === null) { out.textContent = 'Pozisyon hazırlanıyor, bir saniye sonra tekrar dokun.'; return; } handoffSend(handoffText([block(facts, q)]), out); };
+  const later = async (q) => { if (!q) return; await addToQueue(ctx, q); out.textContent = 'Listeye eklendi. Koç sayfasından hepsini tek mesajla gönderebilirsin.'; };
+  m.append(h('p', { class: 'small muted', text: 'Soru, motorun pozisyon verileri ve senin profilinle birlikte Claude’a gider. Birkaç soru biriktirip tek seferde göndermek için “Sonra sor”u kullan.' }));
+  (ctx.presets || []).forEach((p) => m.append(h('div', { class: 'qrow' }, h('span', { text: p.label }), btn('Claude’a sor', () => send(p.q), 'primary'), btn('Sonra sor', () => later(p.q), 'ghost'))));
+  m.append(h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Claude’a sor', () => send(ta.value.trim()), 'primary'), btn('Sonra sor', () => later(ta.value.trim()), 'ghost')), out);
+  factsP.then(() => {});
+}
+
+// offline / ask-later queue
+async function addToQueue(ctx, q) {
+  const facts = await coachFacts(ctx.fen).catch(() => 'FEN: ' + ctx.fen);
+  coachQ().unshift({ id: Date.now() + Math.random(), fen: ctx.fen, title: ctx.title || '', extra: ctx.extra || '', facts, q, status: 'bekliyor', created: today() });
+  Store.s.coachQ = coachQ().slice(0, 60); Store.touch();
+  if (navigator.onLine && coachMode() === 'api') processQueue();
+}
+function openQueueAdd(ctx) {
+  const m = modal('Sonra sor'), ta = h('textarea', { rows: '2', placeholder: 'Sorunu yaz', 'aria-label': 'Soru', style: { minHeight: '64px' } }), out = h('p', { class: 'msg' });
+  const api = coachMode() === 'api';
+  const add = async (q) => { if (!q) return; await addToQueue(ctx, q); out.className = 'msg good'; out.textContent = api ? 'Kaydedildi. İnternet gelince cevap Koç sayfasına düşecek.' : 'Kaydedildi. İnternet gelince Koç sayfasından hepsini tek mesajla Claude’a gönderebilirsin.'; };
+  m.append(h('p', { class: 'muted', text: 'İnternet yok. Pozisyon ve sorun şimdi kaydedilir; motorun verileri de hazır olur.' }));
+  (ctx.presets || []).forEach((p) => m.append(h('div', { class: 'qrow' }, h('span', { text: p.label }), btn('Kaydet', () => add(p.q), 'primary'))));
+  m.append(h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Kaydet', () => add(ta.value.trim()), 'primary')), out);
+}
+let queueBusy = false;
+async function processQueue(manual) {
+  if (queueBusy || !navigator.onLine || coachMode() !== 'api') return 0;
+  queueBusy = true; let done = 0;
+  try {
+    for (const it of coachQ().filter((x) => x.status === 'bekliyor')) {
+      try { it.answer = await apiMessages(COACH_RULES, [{ role: 'user', content: `${studentProfile()}\n\nPOZİSYON VERİLERİ\n${it.facts}${it.extra ? '\n' + it.extra : ''}\n\nSORU: ${it.q}` }], true, null); it.status = 'cevaplandı'; done++; Store.touch(); }
+      catch (e) { if (manual) toast(apiErrorText(e)); break; }
+    }
+  } finally { queueBusy = false; }
+  if (done) { toast(`Koçtan ${done} cevap geldi. Koç sayfasında.`); if (parseHash().name === 'koc') render(); }
+  return done;
+}
+VIEWS.koc = (main) => {
+  const mode = coachMode(), Q = coachQ(), pend = Q.filter((x) => x.status === 'bekliyor'), ans = Q.filter((x) => x.status === 'cevaplandı');
+  main.append(h('header', { class: 'page-head' }, h('h1', null, 'Koç'), h('p', { class: 'lead', text: mode === 'handoff' ? 'İşaretlediğin anlar burada birikir; hepsini tek mesajla Claude’a gönderebilirsin. Sorduğun sorular burada saklanır.' : 'Sorduğun sorular ve cevaplar burada saklanır. İnternetsizken sorduğun sorular bağlantı gelince cevaplanır.' })));
+  if (pend.length) {
+    const sec = h('section', null, h('h2', null, `Bekleyen sorular (${pend.length})`), h('ul', { class: 'qlist' }, pend.map((x) => h('li', null, h('strong', null, x.q), x.title ? h('span', { class: 'small muted', text: ` (${x.title})` }) : null))));
+    const out = h('div', { class: 'answer' });
+    if (mode === 'api') sec.append(h('div', { class: 'actions' }, btn('Şimdi cevapla', async () => { const n = await processQueue(true); if (!n && !navigator.onLine) toast('İnternet yok.'); render(); }, 'primary')));
+    else if (mode === 'handoff') sec.append(h('div', { class: 'actions' }, btn('Hepsini Claude’a gönder', () => { handoffSend(handoffText(pend.map((x, i) => `POZİSYON ${i + 1}${x.title ? ' (' + x.title + ')' : ''}\n${x.facts}${x.extra ? '\n' + x.extra : ''}\n\nSORU: ${x.q}`)) + '\n\nHer pozisyona ayrı başlıkla cevap ver.', out); pend.forEach((x) => { x.status = 'gönderildi'; }); Store.touch(); }, 'primary')), out);
+    main.append(sec);
+  }
+  if (ans.length) main.append(h('section', null, h('h2', null, 'Cevaplar'), ans.slice(0, 20).map((x) => {
+    const bEl = h('div', { class: 'board-col small' }), card = h('div', { class: 'qitem' }, bEl, h('p', { class: 'chat-q', text: x.q + (x.title ? ` (${x.title})` : '') }), h('div', { class: 'chat-a', text: x.answer }),
+      h('div', { class: 'actions' }, btn('Bu pozisyondan oyna', () => { const turn = x.fen.split(' ')[1]; Store.s.cur = newGameState({ level: suggestLevel(), mode: 'coach', color: turn, fen: x.fen }); Store.touch(); go('oyna'); }, 'ghost'), btn('Sil', () => { Store.s.coachQ = coachQ().filter((y) => y !== x); Store.touch(); render(); }, 'ghost')));
+    setTimeout(() => { const b = new Board(bEl, { movable: 'none', orientation: x.fen.split(' ')[1] }); b.setPosition(x.fen); }, 0);
+    return card;
+  })));
+  if (!pend.length && !ans.length) main.append(h('p', { class: 'muted', text: 'Henüz soru yok. Oyunda, analizde ya da bulmacada “Koça sor”a dokun; internet yoksa sorun buraya kaydedilir.' }));
+};
+NAV_LABEL.koc = 'Koç'; NAV_DESC.koc = 'Sorduğun sorular ve cevaplar';
+MORE_IDS.splice(MORE_IDS.indexOf('ilerleme'), 0, 'koc');
+const _shell3 = buildShell;
+buildShell = function () { _shell3(); const r = $('.rail [data-nav="ilerleme"]'); if (r) r.insertAdjacentElement('beforebegin', h('a', { href: '#koc', 'data-nav': 'koc', text: 'Koç' })); };
+
+// dispatcher: always personal context; offline → ask later
+openCoach = function (ctx) {
+  const c = Object.assign({}, ctx, { extra: [ctx.extra, studentProfile()].filter(Boolean).join('\n') }), mode = coachMode();
+  if (mode !== 'claude' && !navigator.onLine) return openQueueAdd(c);
+  if (mode === 'claude' || mode === 'api') return openCoachChat(c, mode);
+  return openCoachHandoff(c);
+};
+if (STANDALONE) Coach.on = function () { return this.available && !this.disabled && Store.s.settings.coach !== false; };
+window.addEventListener('online', () => processQueue());
+
+// settings: notes the coach should know, Claude connection help
+const _ayarlar4 = VIEWS.ayarlar;
+VIEWS.ayarlar = (main) => {
+  _ayarlar4(main);
+  const S = Store.s; if (S.settings.coachNotes === undefined) { S.settings.coachNotes = DEFAULT_NOTES; Store.touch(); }
+  const notes = h('textarea', { 'aria-label': 'Koçun bilmesi gerekenler', style: { minHeight: '96px' } }); notes.value = S.settings.coachNotes; let nt = null;
+  notes.addEventListener('input', () => { clearTimeout(nt); nt = setTimeout(() => { S.settings.coachNotes = notes.value; Store.touch(); }, 500); });
+  const sec = h('section', null, h('h2', null, 'Koçun bilmesi gerekenler'), h('p', { class: 'muted', text: 'Her soruya profilinle birlikte eklenir. Oyunlarındaki analizden başlattım; istediğin gibi değiştir.' }), notes);
+  const anchor = [...main.querySelectorAll('h2')].find((x) => x.textContent === 'Çevrimiçi koç');
+  if (STANDALONE) {
+    const msg = h('p', { class: 'msg' }), inp = h('input', { type: 'url', placeholder: 'https://claude.ai/project/...', 'aria-label': 'Claude proje bağlantısı' }); inp.value = S.settings.claudeProject || '';
+    sec.append(h('h2', { style: { marginTop: '26px' } }, 'Claude ile bağlantı'),
+      h('p', { class: 'muted', text: 'En akıcı yol API anahtarı: cevaplar bu ekranda gelir, devam sorusu sorabilirsin, internetsizken sorduğun sorular bağlantı gelince cevaplanır.' }),
+      h('ol', { class: 'steps-list' }, h('li', null, 'platform.claude.com’da oturum aç; bu, Claude aboneliğinden ayrı bir geliştirici hesabı.'), h('li', null, 'Settings → API keys → Create key. Anahtar yalnızca bir kez gösterilir.'), h('li', null, 'Billing bölümünden bir ödeme yöntemi ekle.'), h('li', null, 'Anahtarı yukarıdaki “Çevrimiçi koç” alanına yapıştır.')),
+      h('div', { class: 'actions' }, btn('API anahtarı sayfasını aç', () => window.open('https://platform.claude.com/settings/keys', '_blank'))),
+      h('h3', { style: { marginTop: '18px' } }, 'Anahtarsız: “Satranç koçum” projesi'),
+      h('p', { class: 'muted', text: 'Claude’da “Satranç koçum” adlı bir proje aç, aşağıdaki talimatı projenin talimatlarına yapıştır, proje bağlantısını buraya kaydet. Sorular boş bir sohbete değil, aynı projeye gider; talimatlar ve projenin hafızası her seferinde hazır olur.' }),
+      h('div', { class: 'key-row' }, inp, btn('Kaydet', () => { const v = inp.value.trim(); if (v && !/^https:\/\/claude\.ai\/project\//.test(v)) { msg.className = 'msg bad'; msg.textContent = 'Bağlantı “https://claude.ai/project/” ile başlamalı.'; return; } S.settings.claudeProject = v; Store.touch(); msg.className = 'msg good'; msg.textContent = v ? 'Proje kaydedildi.' : 'Proje bağlantısı kaldırıldı.'; }, 'primary')),
+      h('div', { class: 'actions' }, btn('Proje talimatını kopyala', () => { try { navigator.clipboard.writeText(PROJECT_INSTR).then(() => { msg.className = 'msg good'; msg.textContent = 'Talimat kopyalandı.'; }, () => { msg.className = 'msg bad'; msg.textContent = 'Kopyalanamadı.'; }); } catch (e) { msg.textContent = 'Kopyalanamadı.'; } })), msg);
+  }
+  const anchorSec = anchor ? anchor.closest('section') : null;
+  if (anchorSec) anchorSec.after(sec); else main.insertBefore(sec, main.children[2] || null);
+};
+window.HH.processQueue = processQueue; window.HH.studentProfile = studentProfile;
+setTimeout(() => processQueue(), 4000);
 init();
 
 </script>
