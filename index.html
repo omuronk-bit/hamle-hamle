@@ -271,6 +271,9 @@ a.card:hover{ border-color:var(--ink-3); }
 .key-row input{ flex:1 1 220px; min-height:42px; padding:8px 12px; border:1px solid var(--line); border-radius:var(--r-s); background:var(--surface); color:var(--ink); font:inherit; }
 @media (prefers-reduced-motion:reduce){ .evalbar > span{ transition:none; } }
 
+.callout.hunt{ border-left-color:var(--amber); }
+.callout.hunt .prompt{ margin:4px 0; }
+
 </style>
 </head>
 <body>
@@ -898,6 +901,10 @@ const HH_BOOK = {"names":["Alekhine Defense","Alekhine Defense: Balogh Variation
 
 </script>
 <script>
+const HH_E4 = [{"id": "w-e4-1", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...e5: İtalyan (sakin kurulum)", "note": "Fil c4, c3–d3 ile sağlam merkez, rok ve Ke1. Erken saldırı yok, önce gelişim.", "san": "e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d3 d6 O-O O-O Re1 a6 Bb3", "uci": ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "f8c5", "c2c3", "g8f6", "d2d3", "d7d6", "e1g1", "e8g8", "f1e1", "a7a6", "c4b3"]}, {"id": "w-e4-2", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...e5: İki At Savunması", "note": "4.d3 ile sakin kal: Ag5 maceralarına girmeden gelişimi tamamla.", "san": "e4 e5 Nf3 Nc6 Bc4 Nf6 d3 Be7 O-O O-O Re1 d6 c3", "uci": ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "d2d3", "f8e7", "e1g1", "e8g8", "f1e1", "d7d6", "c2c3"]}, {"id": "w-e4-3", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...d5: İskandinav (2...Vxd5)", "note": "Veziri Ac3 ile tempo kazanarak kovala, sonra d4, Af3, Fc4 ve rok.", "san": "e4 d5 exd5 Qxd5 Nc3 Qa5 d4 Nf6 Nf3 Bf5 Bc4 e6 Bd2 c6 O-O", "uci": ["e2e4", "d7d5", "e4d5", "d8d5", "b1c3", "d5a5", "d2d4", "g8f6", "g1f3", "c8f5", "f1c4", "e7e6", "c1d2", "c7c6", "e1g1"]}, {"id": "w-e4-4", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...d5: İskandinav (2...Af6)", "note": "Piyonu geri vermeden d4 ve Af3; fili e2’ye koy, rok yap, sonra c4.", "san": "e4 d5 exd5 Nf6 d4 Nxd5 Nf3 Bg4 Be2 e6 O-O Be7 c4 Nb6 Nc3", "uci": ["e2e4", "d7d5", "e4d5", "g8f6", "d2d4", "f6d5", "g1f3", "c8g4", "f1e2", "e7e6", "e1g1", "f8e7", "c2c4", "d5b6", "b1c3"]}, {"id": "w-e4-5", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...Af6: Alekhine", "note": "e5 ile atı kovala, d4 ve Af3 ile merkezi kur, sonra c4.", "san": "e4 Nf6 e5 Nd5 d4 d6 Nf3 Bg4 Be2 e6 O-O Be7 c4 Nb6 Nc3", "uci": ["e2e4", "g8f6", "e4e5", "f6d5", "d2d4", "d7d6", "g1f3", "c8g4", "f1e2", "e7e6", "e1g1", "f8e7", "c2c4", "d5b6", "b1c3"]}, {"id": "w-e4-6", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...Ac6: Nimzowitsch", "note": "2.Af3 ile İtalyan yapısına dön.", "san": "e4 Nc6 Nf3 e5 Bc4 Bc5 c3 Nf6 d3 d6 O-O O-O", "uci": ["e2e4", "b8c6", "g1f3", "e7e5", "f1c4", "f8c5", "c2c3", "g8f6", "d2d3", "d7d6", "e1g1", "e8g8"]}, {"id": "w-e4-7", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...c5: Sicilya (2...d6)", "note": "3.Fb5+ ile filleri değiş, c3 ve d4 ile merkezi kur. Ezber az.", "san": "e4 c5 Nf3 d6 Bb5+ Bd7 Bxd7+ Qxd7 O-O Nc6 c3 Nf6 Re1 e6 d4", "uci": ["e2e4", "c7c5", "g1f3", "d7d6", "f1b5", "c8d7", "b5d7", "d8d7", "e1g1", "b8c6", "c2c3", "g8f6", "f1e1", "e7e6", "d2d4"]}, {"id": "w-e4-8", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...c5: Sicilya (2...Ac6)", "note": "3.Fb5 (Rossolimo): rok, Ke1, c3 ve d4.", "san": "e4 c5 Nf3 Nc6 Bb5 g6 O-O Bg7 Re1 Nf6 c3 O-O d4", "uci": ["e2e4", "c7c5", "g1f3", "b8c6", "f1b5", "g7g6", "e1g1", "f8g7", "f1e1", "g8f6", "c2c3", "e8g8", "d2d4"]}, {"id": "w-e4-9", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...e6: Fransız (değişim)", "note": "exd5 ile simetrik, sakin yapı: Fd3, c3, Af3, rok.", "san": "e4 e6 d4 d5 exd5 exd5 Bd3 Nc6 c3 Bd6 Nf3 Nf6 O-O O-O", "uci": ["e2e4", "e7e6", "d2d4", "d7d5", "e4d5", "e6d5", "f1d3", "b8c6", "c2c3", "f8d6", "g1f3", "g8f6", "e1g1", "e8g8"]}, {"id": "w-e4-10", "color": "w", "group": "Beyaz: 1.e4 (senin açılışın)", "name": "1...c6: Caro-Kann (değişim)", "note": "exd5 sonrası Fd3, c3, Ff4 ve Af3: Londra’ya benzer, rahat bir kurulum.", "san": "e4 c6 d4 d5 exd5 cxd5 Bd3 Nc6 c3 Nf6 Bf4 g6 Nf3 Bg7 Nbd2 O-O O-O", "uci": ["e2e4", "c7c6", "d2d4", "d7d5", "e4d5", "c6d5", "f1d3", "b8c6", "c2c3", "g8f6", "c1f4", "g7g6", "g1f3", "f8g7", "b1d2", "e8g8", "e1g1"]}];
+
+</script>
+<script>
 /* Hamle Hamle — satranç antrenörü */
 'use strict';
 const C = HHChessFactory();
@@ -1044,7 +1051,7 @@ function mergeState(a, b) {
   for (const k of ['drills', 'days']) { out[k] = Object.assign({}, a[k] || {}); for (const [x, v] of Object.entries(B[k] || {})) out[k][x] = Math.max(out[k][x] || 0, v || 0); }
   const byId = (x, y) => { const m = new Map(); [...x, ...y].forEach((g) => { if (!m.has(g.id)) m.set(g.id, g); }); return [...m.values()]; };
   out.games = byId(a.games || [], B.games || []).sort((x, y) => y.id - x.id).slice(0, 25);
-  out.personal = byId(a.personal || [], B.personal || []).slice(0, 300);
+  out.personal = (() => { const ids = new Set(), fens = new Set(); return [...(a.personal || []), ...(B.personal || [])].filter((p) => { if (ids.has(p.id) || fens.has(p.fen)) return false; ids.add(p.id); fens.add(p.fen); return true; }).slice(0, 300); })();
   return out;
 }
 async function exportProgress() {
@@ -1623,7 +1630,7 @@ function ReviewScreen(host, R) {
         focus.append(h('h3', null, `${i === bad[0] ? 'İlk büyük hatan' : label}, ${moveNo(i)}. hamle`), h('p', { html: `Oynadığın: <strong>${sanHTML(rec.san, R.color)}</strong> (kırmızı ok). Daha iyisi: <strong>${sanHTML(r.bestSan, R.color)}</strong> (yeşil ok).` }));
         const why = h('p', { class: 'small muted', text: 'Rakibin cevabı hesaplanıyor…' }); focus.append(why);
         Engine.analyze(rec.fen, { depth: 4, timeMs: 600 }).then((a) => { if (!alive || cur !== i) return; why.innerHTML = a && a.bestSan ? `Oynadığın hamleden sonra rakip <strong>${sanHTML(a.bestSan, R.color === 'w' ? 'b' : 'w')}</strong> ile cevap verebilirdi.` : ''; });
-        focus.append(h('div', { class: 'actions' }, btn('Bu pozisyondan tekrar oyna', () => { Store.s.cur = newGameState({ level: R.level || suggestLevel(), mode: 'warn', color: R.color, fen: rec.fenBefore }); Store.touch(); go('oyna'); }), coachBtn(() => ({ fen: rec.fenBefore, title: `${moveNo(i)}. hamle`, extra: `BAĞLAM: Öğrenci bu pozisyonda ${rec.san} oynadı. Motorun önerisi ${r.bestSan}. Hamle "${label}" olarak işaretlendi.`, presets: [{ label: 'Bu hamle neden kötü?', q: `${rec.san} neden kötü bir hamleydi ve ${r.bestSan} neden daha iyi?` }, { label: 'Neye bakmalıydım?', q: 'Bu hatayı oyun sırasında fark etmek için hangi soruyu sormalıydım?' }] }))));
+        focus.append(h('div', { class: 'actions' }, btn('Bu pozisyondan tekrar oyna', () => { Store.s.cur = newGameState({ level: R.level || suggestLevel(), mode: 'coach', color: R.color, fen: rec.fenBefore }); Store.touch(); go('oyna'); }), coachBtn(() => ({ fen: rec.fenBefore, title: `${moveNo(i)}. hamle`, extra: `BAĞLAM: Öğrenci bu pozisyonda ${rec.san} oynadı. Motorun önerisi ${r.bestSan}. Hamle "${label}" olarak işaretlendi.`, presets: [{ label: 'Bu hamle neden kötü?', q: `${rec.san} neden kötü bir hamleydi ve ${r.bestSan} neden daha iyi?` }, { label: 'Neye bakmalıydım?', q: 'Bu hatayı oyun sırasında fark etmek için hangi soruyu sormalıydım?' }] }))));
       } else {
         board.setPosition(rec.fen, { last: [rec.from, rec.to] });
         focus.append(h('p', { class: 'muted', text: r ? 'Bu hamlede belirgin bir sorun yok.' : 'Rakibin hamlesi.' }));
@@ -1653,17 +1660,17 @@ async function blunderCheck(fen, uci) {
 const resultTitle = (G) => (G.result === 'win' ? 'Kazandın!' : G.result === 'draw' ? 'Berabere' : 'Kaybettin');
 function resultText(G) { const why = { checkmate: 'Mat.', stalemate: 'Pat.', insufficient: 'Mat için yeterli taş kalmadı.', fifty: '50 hamle kuralı.', threefold: 'Aynı pozisyon üç kez tekrarlandı.', resign: 'Teslim oldun.' }[G.why] || ''; return `${why} Oyunu incelersen ilk ağır hatanı görürsün.`.trim(); }
 function PlaySetup(main) {
-  let color = 'w', level = suggestLevel(), mode = 'warn';
+  let color = 'w', level = suggestLevel(), mode = 'coach';
   main.append(h('header', { class: 'page-head' }, h('h1', null, 'Oyna'), h('p', { class: 'lead', text: 'Bota karşı oyna. Kontrol modu, taş kaybettirecek bir hamle yaptığında seni durdurur; zamanla kapatmayı hedefle.' })));
   const lvl = h('span', { class: 'muted' }), range = h('input', { type: 'range', min: '1', max: '8', step: '1', value: String(level), 'aria-label': 'Bot seviyesi' });
   const upd = () => { lvl.textContent = `Seviye ${level}: ${C.LEVELS[level].name}${level === suggestLevel() ? ' (sana önerilen)' : ''}`; };
   range.addEventListener('input', () => { level = +range.value; upd(); }); upd();
-  const notes = { off: 'Uyarı yok; gerçek oyun gibi.', warn: 'Taş kaybettiren bir hamlede durdurur, korumasız taşlarını turuncu halkayla işaretler.', full: 'Uyarıya ek olarak her hamlede iki tarafın şah çekme ve taş alma imkânlarını gösterir.' };
-  const note = h('p', { class: 'small muted', text: notes.warn });
+  const notes = { coach: 'Önerilen. Rakibin gerçek bir tehdidi olduğunda hamlenden önce onu bulmanı ister; buldukça sorular azalır. Ağır hatada da uyarır.', off: 'Uyarı yok; gerçek oyun gibi.', warn: 'Taş kaybettiren bir hamlede durdurur, korumasız taşlarını turuncu halkayla işaretler.', full: 'Uyarıya ek olarak her hamlede iki tarafın şah çekme ve taş alma imkânlarını gösterir.' };
+  const note = h('p', { class: 'small muted', text: notes.coach });
   main.append(h('section', null,
     h('div', { class: 'field' }, h('span', { class: 'label' }, 'Rengin'), seg([['w', 'Beyaz'], ['b', 'Siyah'], ['r', 'Rastgele']], 'w', (v) => { color = v; }, 'Renk')),
     h('div', { class: 'field' }, h('label', null, 'Bot seviyesi'), h('div', { class: 'range-row' }, range, lvl)),
-    h('div', { class: 'field' }, h('span', { class: 'label' }, 'Kontrol modu'), seg([['off', 'Kapalı'], ['warn', 'Uyarı'], ['full', 'Tam']], 'warn', (v) => { mode = v; note.textContent = notes[v]; }, 'Kontrol modu'), note),
+    h('div', { class: 'field' }, h('span', { class: 'label' }, 'Kontrol modu'), seg([['coach', 'Antrenör'], ['warn', 'Uyarı'], ['full', 'Tam'], ['off', 'Kapalı']], 'coach', (v) => { mode = v; note.textContent = notes[v]; }, 'Kontrol modu'), note),
     h('div', { class: 'actions' }, btn('Oyunu başlat', () => { Store.s.cur = newGameState({ level, mode, color }); Store.touch(); render(); }, 'primary'))));
   const rows = Object.entries(Store.s.bots || {}).sort((a, b) => a[0] - b[0]);
   if (rows.length) main.append(h('section', null, h('h2', null, 'Bota karşı sonuçların'), h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, 'Seviye'), h('th', null, 'Kazandın'), h('th', null, 'Berabere'), h('th', null, 'Kaybettin'))), h('tbody', null, rows.map(([l, s]) => h('tr', null, h('td', null, `${l}: ${C.LEVELS[l].name}`), h('td', null, s.w || 0), h('td', null, s.d || 0), h('td', null, s.l || 0)))))));
@@ -1671,17 +1678,18 @@ function PlaySetup(main) {
 function GameScreen(main, G) {
   const game = new C.Game(G.start); for (const u of G.moves) if (!game.move(u)) break;
   const opp = G.color === 'w' ? 'b' : 'w';
-  main.append(h('header', { class: 'page-head' }, h('p', { class: 'kicker', text: `Seviye ${G.level}: ${C.LEVELS[G.level].name}. Kontrol modu ${({ off: 'kapalı', warn: 'uyarı', full: 'tam' })[G.mode]}.` }), h('h1', null, 'Bota karşı')));
+  main.append(h('header', { class: 'page-head' }, h('p', { class: 'kicker', text: `Seviye ${G.level}: ${C.LEVELS[G.level].name}. Kontrol modu ${({ off: 'kapalı', warn: 'uyarı', full: 'tam', coach: 'antrenör' })[G.mode]}.` }), h('h1', null, 'Bota karşı')));
   const { bEl, side } = playLayout(main), board = new Board(bEl, { orientation: G.color, movable: G.color });
-  const status = h('p', { class: 'msg', 'aria-live': 'polite' }), cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div'), acts = h('div', { class: 'actions' });
-  side.append(status, cctBox, endBox, sheet, acts);
+  const status = h('p', { class: 'msg', 'aria-live': 'polite' }), huntBox = h('div'), cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div'), acts = h('div', { class: 'actions' });
+  side.append(status, huntBox, cctBox, endBox, sheet, acts);
   let thinking = false, alive = true, inner = null; const show = { opp: false, me: false };
+  const hunt = (G.mode === 'coach' && typeof HuntController === 'function') ? HuntController(board, huntBox, G, () => game, () => refresh()) : null;
   const lastMove = () => { const r = game.history[game.history.length - 1]; return r ? [r.from, r.to] : null; };
   const userTurn = () => !G.over && !thinking && game.turn() === G.color;
   function cctData() { const fen = game.fen(), dd = (o) => { const m = new Map(); [...o.checks, ...o.captures].forEach((x) => m.set(x.uci, x)); return [...m.values()]; }; const a = C.cct(fen, opp), b = C.cct(fen, G.color); return { opp: dd(a), me: dd(b), oc: a.checks.length, oa: a.captures.length, mc: b.checks.length, ma: b.captures.length }; }
   function refresh() {
-    const ut = userTurn(), arrows = [];
-    board.hang = (G.mode !== 'off' && ut) ? C.looseAndHanging(game.fen()).hanging[G.color] : [];
+    const ut = userTurn(), arrows = (hunt && hunt.arrow()) ? [hunt.arrow()] : [];
+    board.hang = ((G.mode === 'warn' || G.mode === 'full') && ut) ? C.looseAndHanging(game.fen()).hanging[G.color] : [];
     cctBox.innerHTML = '';
     if (G.mode === 'full' && ut) {
       const d = cctData();
@@ -1689,7 +1697,7 @@ function GameScreen(main, G) {
       if (show.me) d.me.forEach((m) => arrows.push([m.uci.slice(0, 2), m.uci.slice(2, 4), 'hint']));
       cctBox.append(h('div', { class: 'cct' }, h('h3', null, 'Şah–Alma–Tehdit'), h('div', { class: 'cct-row' }, h('span', null, `Rakip: ${d.oc} şah, ${d.oa} alma`), btn(show.opp ? 'Gizle' : 'Göster', () => { show.opp = !show.opp; refresh(); }, 'ghost')), h('div', { class: 'cct-row' }, h('span', null, `Sen: ${d.mc} şah, ${d.ma} alma`), btn(show.me ? 'Gizle' : 'Göster', () => { show.me = !show.me; refresh(); }, 'ghost'))));
     }
-    board.o.movable = ut ? G.color : 'none';
+    board.o.movable = (ut && !(hunt && hunt.blocking())) ? G.color : 'none';
     board.setPosition(game.fen(), { last: lastMove(), arrows });
     status.className = 'msg';
     status.textContent = G.over ? resultTitle(G) : thinking ? 'Bot düşünüyor…' : (game.pos.inCheck() ? 'Şah! Sıra sende.' : 'Sıra sende.');
@@ -1707,7 +1715,8 @@ function GameScreen(main, G) {
     });
   }
   board.o.onMove = async (uci) => {
-    if (!userTurn()) return false;
+    if (!userTurn() || (hunt && hunt.blocking())) return false;
+    if (hunt) hunt.clearArrow();
     const before = game.fen();
     if (G.mode !== 'off') {
       thinking = true; board.o.movable = 'none'; board.updateLegal(); status.textContent = 'Hamlen kontrol ediliyor…';
@@ -1725,7 +1734,7 @@ function GameScreen(main, G) {
     try { u = await Engine.bot(game.fen(), G.level, game.history.length); } catch (e) { u = null; }
     if (!alive) return; thinking = false;
     if (u) { const r = game.move(u); if (r) { G.moves.push(u); Store.touch(); } }
-    refresh(); checkEnd();
+    refresh(); if (!checkEnd() && hunt && game.turn() === G.color) hunt.start(game.fen());
   }
   function checkEnd() { const s = game.status(); if (!s) return false; finishGame(s === 'checkmate' ? (game.turn() === G.color ? 'loss' : 'win') : 'draw', s); return true; }
   function finishGame(res, why) {
@@ -1735,7 +1744,7 @@ function GameScreen(main, G) {
     Store.s.games.unshift({ id: G.id, day: today(), start: G.start, moves: G.moves.slice(), color: G.color, level: G.level, mode: G.mode, result: res, pgn });
     Store.s.games = Store.s.games.slice(0, 25);
     const b = Store.s.bots[G.level] || { w: 0, d: 0, l: 0 }; b[res === 'win' ? 'w' : res === 'draw' ? 'd' : 'l']++; Store.s.bots[G.level] = b;
-    Store.act(); Store.touch('games'); Store.touch(); refresh(); showEnd();
+    if (hunt) hunt.cancel(); Store.act(); Store.touch('games'); Store.touch(); refresh(); showEnd(); if (typeof afterGame === 'function') afterGame(G, Store.s.games[0], endBox);
   }
   function showEnd() {
     endBox.innerHTML = '';
@@ -1743,10 +1752,10 @@ function GameScreen(main, G) {
       btn('Oyunu incele', () => { const g = Object.assign({}, G); Store.s.cur = null; Store.touch(); main.innerHTML = ''; inner = ReviewScreen(main, { start: g.start, moves: g.moves, color: g.color, level: g.level, id: g.id, title: 'Oyun incelemesi' }); }, 'primary'),
       btn('Yeni oyun', () => { Store.s.cur = null; Store.touch(); render(); }))));
   }
-  function takeback() { if (thinking || G.over || !game.history.length) return; do { game.undo(); G.moves.pop(); } while (game.history.length && game.turn() !== G.color); G.takebacks = (G.takebacks || 0) + 1; Store.touch(); refresh(); if (game.turn() !== G.color) botTurn(); }
+  function takeback() { if (thinking || G.over || !game.history.length) return; do { game.undo(); G.moves.pop(); } while (game.history.length && game.turn() !== G.color); G.takebacks = (G.takebacks || 0) + 1; if (hunt) hunt.cancel(); Store.touch(); refresh(); if (game.turn() !== G.color) botTurn(); }
   refresh();
-  if (G.over) showEnd(); else if (game.turn() !== G.color) botTurn();
-  return () => { alive = false; if (inner) inner(); };
+  if (G.over) showEnd(); else if (game.turn() !== G.color) botTurn(); else if (hunt) hunt.start(game.fen());
+  return () => { alive = false; if (hunt) hunt.cancel(); if (inner) inner(); };
 }
 
 // ---------- coach (asks Claude, grounded in engine facts)
@@ -1871,7 +1880,7 @@ VIEWS.antrenman = (main) => {
     else if (st.k === 'lesson') cl = LessonRunner(box, st.id, { onDone: next });
     else if (st.k === 'endgame') cl = EndgameRunner(box, st.id, { onDone: next, embedded: true });
     else if (st.k === 'opening') cl = OpeningTrainer(box, st.id, { onDone: next });
-    else box.append(h('p', { class: 'lead', text: `Son adım: seviye ${suggestLevel()} bota karşı bir oyun, uyarı modu açık. Her hamleden önce Şah–Alma–Tehdit.` }), h('div', { class: 'actions' }, btn('Oyuna başla', () => { S.done = true; Store.s.cur = newGameState({ level: suggestLevel(), mode: 'warn', color: 'r' }); Store.touch(); go('oyna'); }, 'primary')));
+    else box.append(h('p', { class: 'lead', text: `Son adım: seviye ${suggestLevel()} bota karşı bir oyun, antrenör modu açık: rakibin tehdidini hamlenden önce sen bulacaksın.` }), h('div', { class: 'actions' }, btn('Oyuna başla', () => { S.done = true; Store.s.cur = newGameState({ level: suggestLevel(), mode: 'coach', color: 'r' }); Store.touch(); go('oyna'); }, 'primary')));
     main.append(h('div', { class: 'actions' }, btn('Bu adımı atla', next, 'ghost'), btn('Antrenmana ara ver', () => go('bugun'), 'ghost')));
   }
   draw();
@@ -2103,7 +2112,7 @@ function BookExplorer(host) {
   }
   board.o.onMove = async (uci) => { if (!game.move(uci)) return false; future.length = 0; show(); return true; };
   side.append(nameEl, sub, evb, list, info, navRow(() => game, future, show, board), sheet, acts);
-  acts.append(btn('Bu pozisyondan bota karşı oyna', () => { Store.s.cur = newGameState({ level: suggestLevel(), mode: 'warn', color: game.turn(), fen: game.fen() }); Store.touch(); go('oyna'); }),
+  acts.append(btn('Bu pozisyondan bota karşı oyna', () => { Store.s.cur = newGameState({ level: suggestLevel(), mode: 'coach', color: game.turn(), fen: game.fen() }); Store.touch(); go('oyna'); }),
     coachBtn(() => ({ fen: game.fen(), title: 'Açılış kitabı', extra: bookExtra(game), presets: [{ label: 'Bu açılışın fikri ne?', q: 'Bu açılışın iki taraf için ana fikirlerini, tipik planlarını ve yeni başlayanların sık yaptığı hatayı anlat.' }, { label: 'Hangisini oynamalıyım?', q: 'Bu pozisyondaki kitap hamlelerinden yeni başlayan biri için en anlaşılır ve sağlam olanı hangisi? Neden?' }] })));
   show();
   return () => { alive = false; clearTimeout(aTimer); };
@@ -2145,7 +2154,7 @@ function AnalysisBoard(host) {
   board.o.onMove = async (uci) => { if (!game.move(uci)) return false; future.length = 0; show(); return true; };
   side.append(title, evb, evTxt, lines, navRow(() => game, future, show, board), sheet, acts);
   acts.append(...[btn('Pozisyon ya da PGN yükle', loadDialog), Store.s.games.length ? btn('Son oyunumu aç', () => { const g = Store.s.games[0]; board.setOrientation(g.color); loadMoves(g.start, g.moves); toast('Son oyunun yüklendi. İleri ile adım adım ilerle.'); }) : null,
-    btn('Bu pozisyondan bota karşı oyna', () => { Store.s.cur = newGameState({ level: suggestLevel(), mode: 'warn', color: game.turn(), fen: game.fen() }); Store.touch(); go('oyna'); }, 'ghost'),
+    btn('Bu pozisyondan bota karşı oyna', () => { Store.s.cur = newGameState({ level: suggestLevel(), mode: 'coach', color: game.turn(), fen: game.fen() }); Store.touch(); go('oyna'); }, 'ghost'),
     coachBtn(() => { const last = game.history[game.history.length - 1]; return { fen: game.fen(), title: 'Analiz tahtası', extra: `BAĞLAM: Analiz tahtası. Oynanan hamleler: ${game.history.map((x) => x.san).join(' ') || '(yok)'}. Açılış: ${lastBookName(game) || 'bilinmiyor'}.`, presets: [{ label: 'Burada plan ne?', q: 'Bu pozisyonda sıradaki taraf için iyi bir plan ne? Somut bir hamleyle başla.' }, last ? { label: 'Son hamle iyi miydi?', q: `Son oynanan hamle ${last.san} iyi bir hamle miydi? Daha iyisi var mıydı?` } : null, { label: 'Rakibin tehdidi ne?', q: 'Sırası olmayan tarafın tehditleri neler? Neye dikkat etmeli?' }].filter(Boolean) }; })].filter(Boolean));
   show();
   return () => { alive = false; clearTimeout(aTimer); };
@@ -2224,7 +2233,7 @@ const _acilisOld = VIEWS.acilis, _analizOld = VIEWS.analiz, _ayarlarOld = VIEWS.
 VIEWS.acilis = (main, arg) => {
   if (arg && arg !== 'kitap' && arg !== 'repertuvar') return _acilisOld(main, arg);
   const mode = arg === 'repertuvar' ? 'repertuvar' : 'kitap';
-  main.append(h('header', { class: 'page-head' }, h('h1', null, 'Açılışlar'), h('p', { class: 'lead', text: mode === 'kitap' ? 'Açılış kitabı: 3.865 bilinen açılış hattı. Her pozisyonda kitap hamleleri, Stockfish’in değerlendirmesine göre sıralı. İki taraf için de sen oynarsın; internet gerekmez.' : 'Repertuvarım: beyazla Londra sistemi, siyahla 1.e4’e ...e5, 1.d4’e ...d5. Uygulama, unutmaya başladığın anda hattı tekrar sorar.' })),
+  main.append(h('header', { class: 'page-head' }, h('h1', null, 'Açılışlar'), h('p', { class: 'lead', text: mode === 'kitap' ? 'Açılış kitabı: 3.865 bilinen açılış hattı. Her pozisyonda kitap hamleleri, Stockfish’in değerlendirmesine göre sıralı. İki taraf için de sen oynarsın; internet gerekmez.' : 'Repertuvarım: beyazla 1.e4 (senin oynadığın açılış) ya da Londra sistemi; siyahla 1.e4’e ...e5, 1.d4’e ...d5. Uygulama, unutmaya başladığın anda hattı tekrar sorar.' })),
     h('div', { class: 'field' }, seg([['kitap', 'Açılış kitabı'], ['repertuvar', 'Repertuvarım']], mode, (v) => go('acilis-' + v), 'Açılış bölümü')));
   if (mode === 'kitap') return BookExplorer(main);
   const sub = h('div'); main.append(sub); const r = _acilisOld(sub, null); const ph = sub.querySelector('.page-head'); if (ph) ph.remove(); return r;
@@ -2260,6 +2269,203 @@ highlightNav = function (name) {
   document.querySelectorAll('[data-nav]').forEach((a) => { const on = a.dataset.nav === id || (more && a.dataset.nav === 'diger' && a.tagName === 'BUTTON'); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 };
 window.HH.BOOK = BOOK;
+
+</script>
+<script>
+/* Hamle Hamle — ek modül 3: cihazda Stockfish (iPhone uygulaması), tehdit avı, otomatik oyun incelemesi, sonuca göre bot seviyesi, 1.e4 repertuvarı */
+'use strict';
+
+// ---------- 1.e4 repertoire first (it is what he actually plays)
+HH_OPENINGS.unshift(...HH_E4);
+
+// ---------- Stockfish 19 lite (WASM) when the app is hosted; built-in engine otherwise
+const SF = (() => {
+  let w = null, ready = false, queue = Promise.resolve(), handler = null;
+  function init() {
+    if (!STANDALONE || !/^https?:$/.test(location.protocol)) return Promise.resolve(false);
+    return new Promise((res) => {
+      try { w = new Worker('stockfish-19-lite-single.js'); } catch (e) { res(false); return; }
+      const to = setTimeout(() => res(false), 10000);
+      w.onmessage = (e) => {
+        const line = typeof e.data === 'string' ? e.data : '';
+        if (line === 'uciok') { clearTimeout(to); ready = true; w.postMessage('setoption name Hash value 32'); res(true); return; }
+        if (handler) handler(line);
+      };
+      w.onerror = () => { clearTimeout(to); ready = false; res(false); };
+      w.postMessage('uci');
+    });
+  }
+  function run(fen, o) {
+    const job = queue.then(() => new Promise((res, rej) => {
+      const lines = {}; const guard = setTimeout(() => { handler = null; rej(new Error('stockfish timeout')); }, 20000);
+      handler = (line) => {
+        if (line.startsWith('info') && line.includes(' pv ')) {
+          const mp = +((line.match(/ multipv (\d+)/) || [0, 1])[1]), sc = line.match(/ score (cp|mate) (-?\d+)/), d = +((line.match(/ depth (\d+)/) || [0, 0])[1]);
+          if (sc) lines[mp] = { depth: d, cp: sc[1] === 'cp' ? +sc[2] : null, mate: sc[1] === 'mate' ? +sc[2] : null, pv: line.split(' pv ')[1].trim().split(' ') };
+        } else if (line.startsWith('bestmove')) { clearTimeout(guard); handler = null; res({ best: line.split(' ')[1], lines: Object.keys(lines).map(Number).sort((a, b) => a - b).map((k) => lines[k]) }); }
+      };
+      w.postMessage('setoption name MultiPV value ' + (o.multipv || 1));
+      w.postMessage('position fen ' + fen);
+      w.postMessage('go depth ' + (o.depth || 12) + (o.searchmoves ? ' searchmoves ' + o.searchmoves.join(' ') : ''));
+    }));
+    queue = job.catch(() => {});
+    return job;
+  }
+  return { init, run, get ready() { return ready; } };
+})();
+function uciPv(fen, ucis) { const p = new C.Position(fen), san = [], uci = []; for (const u of ucis || []) { const m = p.moveFromUci(u); if (m === null) break; san.push(p.san(m)); uci.push(u); p.make(m); } return { san, uci }; }
+const sfDepth = (d) => (d >= 6 ? 15 : d >= 5 ? 14 : 13);
+const mateCp = (x) => (x.mate !== null && x.mate !== undefined ? (x.mate > 0 ? 10000 - x.mate : -10000 - x.mate) : x.cp);
+async function sfAnalyze(fen, opts = {}) {
+  const pos = new C.Position(fen), L = pos.legal(); if (!L.length) return { best: null, status: pos.status(), lines: [] };
+  const r = await SF.run(fen, { depth: sfDepth(opts.depth || 5), multipv: opts.multi ? Math.min(5, L.length) : 1 });
+  const top = r.lines[0] || { cp: 0, mate: null, pv: [r.best], depth: 0 }, pv = uciPv(fen, top.pv);
+  const out = { best: r.best, bestSan: pv.san[0] || '', score: top.mate !== null ? (top.mate > 0 ? 10000 : -10000) : top.cp, mate: top.mate, depth: top.depth, turn: pos.turn ? 'b' : 'w', pvUci: pv.uci, pvSan: pv.san, engine: 'sf' };
+  if (opts.multi) out.lines = r.lines.map((x) => { const m = pos.moveFromUci(x.pv[0]); return m === null ? null : { uci: x.pv[0], san: pos.san(m, L), score: x.mate !== null ? (x.mate > 0 ? 10000 : -10000) : x.cp, mate: x.mate }; }).filter(Boolean);
+  return out;
+}
+async function sfReview(fen, uci, opts = {}) {
+  const pos = new C.Position(fen), L = pos.legal(); if (!L.length) return null;
+  const d = sfDepth(opts.depth || 4) - 1, r = await SF.run(fen, { depth: d, multipv: Math.min(3, L.length) });
+  const lines = r.lines.map((x) => ({ uci: x.pv[0], cp: mateCp(x), mate: x.mate }));
+  if (!lines.length) return null;
+  let played = lines.find((l) => l.uci === uci);
+  if (!played) { const r2 = await SF.run(fen, { depth: d, searchmoves: [uci] }); const x = r2.lines[0]; played = x ? { uci, cp: mateCp(x), mate: x.mate } : lines[0]; }
+  const best = lines[0], cl = (v) => Math.max(-1500, Math.min(1500, v)), wb = C.winPct(cl(best.cp));
+  const drop = wb - C.winPct(cl(played.cp));
+  let cls = drop >= 30 ? 'blunder' : drop >= 18 ? 'mistake' : drop >= 9 ? 'inaccuracy' : null; if (played.uci === best.uci) cls = null;
+  const sanOf = (u) => { const m = pos.moveFromUci(u); return m === null ? u : pos.san(m, L); }, pv = uciPv(fen, r.lines[0].pv);
+  const good = lines.filter((l) => wb - C.winPct(cl(l.cp)) < 6).map((l) => l.uci);
+  return { fen, played: uci, playedSan: sanOf(uci), best: best.uci, bestSan: sanOf(best.uci), bestCp: best.cp, playedCp: played.cp, bestMate: best.mate, playedMate: played.mate, drop, cls, good: good.length ? good : [best.uci], pvSan: pv.san.slice(0, 8), pvUci: pv.uci.slice(0, 8), turn: pos.turn ? 'b' : 'w' };
+}
+const _eng = { analyze: Engine.analyze, reviewOne: Engine.reviewOne, review: Engine.review };
+Engine.analyze = (fen, o) => (SF.ready ? sfAnalyze(fen, o).catch(() => _eng.analyze(fen, o)) : _eng.analyze(fen, o));
+Engine.reviewOne = (fen, u, o) => (SF.ready ? sfReview(fen, u, o).catch(() => _eng.reviewOne(fen, u, o)) : _eng.reviewOne(fen, u, o));
+Engine.review = async (items, o, onP) => {
+  if (!SF.ready) return _eng.review(items, o, onP);
+  const out = []; for (let i = 0; i < items.length; i++) { const it = items[i]; out.push(it ? await sfReview(it.fen, it.uci, o).catch(() => null) : null); if (onP) onP((i + 1) / items.length); }
+  return out;
+};
+
+// ---------- threat hunt ("Antrenör" mode)
+async function detectThreat(fen) {
+  const pos = new C.Position(fen); if (pos.inCheck() || !pos.legal().length) return null;
+  const p = fen.split(' '); p[1] = p[1] === 'w' ? 'b' : 'w'; p[3] = '-'; const nfen = p.join(' ');
+  let np; try { np = new C.Position(nfen); } catch (e) { return null; }
+  if (np.inCheck(np.turn ^ 1) || !np.legal().length) return null;
+  const now = await Engine.analyze(fen, { depth: 4, timeMs: 500 }), opp = await Engine.analyze(nfen, { depth: 4, timeMs: 650, multi: true });
+  if (!now || !opp || !opp.lines || !opp.lines.length) return null;
+  const S = now.mate ? (now.mate > 0 ? 10000 : -10000) : now.score;
+  const good = opp.lines.filter((l) => (l.mate && l.mate > 0 && l.mate <= 3) || (Math.max(-3000, Math.min(3000, l.score)) + Math.max(-3000, Math.min(3000, S)) >= 150));
+  if (!good.length) return null;
+  const top = good[0]; let desc = 'mat ederdi';
+  if (!(top.mate && top.mate > 0)) {
+    const vals = { p: 1, n: 3, b: 3, r: 5, q: 9 }, pv = opp.pvUci && opp.pvUci[0] === top.uci ? opp.pvUci.slice(0, 6) : [top.uci], pp = new C.Position(nfen), me = pp.turn; let mx = 0, nm = null;
+    for (const u of pv) { const m = pp.moveFromUci(u); if (m === null) break; if (pp.turn === me) { const v = pp.piece(C.sqIndex(u.slice(2, 4))); if (v && vals[v.type] > mx) { mx = vals[v.type]; nm = PIECE_NAME[v.type.toUpperCase()].toLowerCase(); } } pp.make(m); }
+    desc = nm ? `${top.san.includes('+') ? 'şah çekerek ' : ''}bir ${nm} kazanırdı` : 'malzeme kazanırdı';
+  }
+  return { uci: top.uci, san: top.san, desc, alts: good.map((l) => l.uci) };
+}
+function HuntController(board, box, G, getGame, refresh) {
+  const H = Store.s.hunt || (Store.s.hunt = { n: 0, ok: 0, rec: [] });
+  let st = null, token = 0, arrow = null;
+  const rate = () => (H.rec.length ? H.rec.reduce((a, b) => a + b, 0) / H.rec.length : 0);
+  const prob = (threat) => { const r = H.rec.length >= 10 ? rate() : 0; return threat ? (r >= 0.85 ? 0.35 : r >= 0.7 ? 0.65 : 1) : (r >= 0.7 ? 0.08 : 0.2); };
+  board.root.addEventListener('pointerdown', (e) => { if (!st) return; const s = board.sqFromPoint(e.clientX, e.clientY); if (s) tap(s); });
+  function draw(text, cls) {
+    box.innerHTML = '';
+    box.append(h('div', { class: 'callout hunt' }, h('h3', null, 'Tehdit avı'), h('p', { class: 'prompt', text: 'Hamle yapmadan önce: rakibin şu an bir tehdidi var mı?' }), h('p', { class: 'small muted', text: 'Varsa göster: önce rakibin oynayacağı taşa, sonra gideceği kareye dokun.' }), h('p', { class: 'msg ' + (cls || ''), text: text || '' }),
+      h('div', { class: 'actions' }, btn('Tehdit yok', none), btn('Göster', () => finish(false), 'ghost')), h('p', { class: 'small muted', text: H.n ? `Şimdiye kadar ${H.ok}/${H.n} doğru.` : 'Rakibin şah çekme ve taş alma imkânlarından başla.' })));
+  }
+  async function start(fen) {
+    cancel(); const my = ++token; let t = null;
+    try { t = await detectThreat(fen); } catch (e) { t = null; }
+    if (my !== token || G.over || getGame().fen() !== fen || Math.random() >= prob(!!t)) return;
+    st = { t, tries: 0, from: null }; draw(); refresh();
+  }
+  function tap(s) {
+    const P = board.pieces()[s];
+    if (!st.from) { if (!P || P[0] === G.color) { draw('Rakibin taşlarından birine dokun.', 'bad'); return; } st.from = s; board.marks = { [s]: 'hint' }; board.render(false); return; }
+    const mv = st.from + s; st.from = null; board.marks = {}; board.render(false);
+    if (st.t && st.t.alts.some((u) => u.startsWith(mv))) return finish(true);
+    st.tries++; if (st.tries >= 2) return finish(false);
+    draw(st.t ? 'Bu değil. Bir kez daha bak: rakibin şah çekme ve taş alma imkânlarından başla.' : 'Bu bir tehdit değil. Emin değilsen “Tehdit yok” de.', 'bad');
+  }
+  function none() { if (!st) return; if (!st.t) return finish(true); st.tries++; if (st.tries >= 2) return finish(false); draw('Aslında bir tehdit var. Rakibin şah çekme ve taş alma imkânlarına bak.', 'bad'); }
+  function finish(ok) {
+    if (!st) return; const t = st.t; H.n++; if (ok) H.ok++; H.rec.push(ok ? 1 : 0); if (H.rec.length > 30) H.rec.shift();
+    G.hunt = G.hunt || { n: 0, ok: 0 }; G.hunt.n++; if (ok) G.hunt.ok++; Store.touch();
+    st = null; arrow = t ? [t.uci.slice(0, 2), t.uci.slice(2, 4), ok ? 'good' : 'bad'] : null; box.innerHTML = '';
+    box.append(h('div', { class: 'callout hunt' }, h('p', { class: 'msg ' + (ok ? 'good' : 'bad'), html: t ? `${ok ? 'Doğru. ' : ''}Tehdit: rakip <strong>${sanHTML(t.san, G.color === 'w' ? 'b' : 'w')}</strong> oynayıp ${t.desc}. Şimdi buna karşı bir hamle bul.` : (ok ? 'Doğru: şu an ciddi bir tehdit yok. Kendi planına bak.' : 'Şu an ciddi bir tehdit yoktu.') })));
+    refresh();
+  }
+  function cancel() { token++; st = null; arrow = null; box.innerHTML = ''; }
+  return { start, cancel, blocking: () => !!st, arrow: () => arrow, clearArrow: () => { arrow = null; box.innerHTML = ''; } };
+}
+
+// ---------- automatic review after each game, mistakes become puzzles
+const moveNoOf = (start, i) => { const sp = start.split(' '); return parseInt(sp[5] || '1', 10) + Math.floor((i + (sp[1] === 'b' ? 1 : 0)) / 2); };
+async function reviewGame(rec) {
+  const g = new C.Game(rec.start), items = [], recs = [];
+  for (const u of rec.moves) { const before = g.fen(); const r = g.move(u); if (!r) break; recs.push(r); items.push(r.color === rec.color ? { fen: before, uci: u } : null); }
+  let res; try { res = await Engine.review(items, { depth: 4, timeMs: 550 }); } catch (e) { return null; }
+  const S = Store.s; let accSum = 0, n = 0, bl = 0, mi = 0, ina = 0, added = 0;
+  res.forEach((r, i) => {
+    if (!r) return; n++; accSum += Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * Math.max(0, r.drop)) - 3.1669));
+    if (r.cls === 'blunder') bl++; else if (r.cls === 'mistake') mi++; else if (r.cls === 'inaccuracy') ina++;
+    if (r.cls === 'blunder' || r.cls === 'mistake') {
+      const pid = 'my-' + rec.id + '-' + i;
+      if (!S.personal.some((p) => p.id === pid || p.fen === recs[i].fenBefore)) { S.personal.unshift({ id: pid, fen: recs[i].fenBefore, accept: r.good && r.good.length ? r.good : [r.best], best: r.best, note: `Seviye ${rec.level} bota karşı, ${moveNoOf(rec.start, i)}. hamle: ${recs[i].san} yerine ${r.bestSan} daha iyiydi.`, created: today() }); S.srs[pid] = { b: 1, n: 0, w: 0, d: today() }; added++; }
+    }
+  });
+  rec.review = { acc: n ? Math.round(accSum / n) : 0, blunders: bl, mistakes: mi, inacc: ina, engine: SF.ready ? 'sf' : 'js', added };
+  S.personal = S.personal.slice(0, 300); Store.touch('games'); if (added) Store.touch('personal'); Store.touch();
+  return rec.review;
+}
+async function afterGame(G, rec, endBox) {
+  const S = Store.s;
+  if (rec && rec.start === C.START) { S.botLevel = clamp(G.level + (rec.result === 'win' ? 1 : rec.result === 'loss' ? -1 : 0), 1, 8); Store.touch(); }
+  if (!rec) return;
+  const box = h('div', { class: 'callout' }, h('p', { class: 'muted', text: 'Oyunun inceleniyor…' })); endBox.append(box);
+  const r = await reviewGame(rec); if (!r) { box.remove(); return; }
+  box.innerHTML = '';
+  box.append(...[h('h3', null, 'Otomatik inceleme'), h('p', null, `İsabet %${r.acc}. Ağır hata ${r.blunders}, hata ${r.mistakes}.`),
+    r.added ? h('p', { class: 'small muted', text: `${r.added} hatan “Benim hatalarım” bulmacalarına eklendi.` }) : h('p', { class: 'small muted', text: 'Bu oyunda bulmacaya çevrilecek ciddi hata yok.' }),
+    G.hunt ? h('p', { class: 'small muted', text: `Tehdit avı: ${G.hunt.ok}/${G.hunt.n} doğru.` }) : null,
+    h('p', { class: 'small muted', text: `Sonraki oyun için önerilen seviye: ${suggestLevel()}.` })].filter(Boolean));
+}
+
+// ---------- bot level from game results, not puzzle rating
+const _levelFromPuzzles = suggestLevel;
+suggestLevel = function () {
+  const S = Store.s; if (S.botLevel) return S.botLevel;
+  const lv = Object.entries(S.bots || {}).map(([l, s]) => ({ l: +l, n: (s.w || 0) + (s.d || 0) + (s.l || 0), sc: (s.w || 0) + 0.5 * (s.d || 0) })).filter((x) => x.n > 0);
+  if (lv.length) { const ok = lv.filter((x) => x.sc / x.n >= 0.5).map((x) => x.l), bad = lv.filter((x) => x.sc / x.n < 0.5).map((x) => x.l); if (ok.length) return Math.max(...ok); return Math.max(1, Math.min(...bad) - 1); }
+  return Math.max(1, _levelFromPuzzles() - 1);
+};
+
+// ---------- progress: game quality is the real measure
+const _ilerlemeOld = VIEWS.ilerleme;
+VIEWS.ilerleme = (main) => {
+  _ilerlemeOld(main);
+  const S = Store.s, G = S.games || [], sec = h('section', null, h('h2', null, 'Oyun kalitesi'));
+  const rv = G.filter((g) => g.review).slice(0, 10);
+  if (rv.length) {
+    const avgE = (rv.reduce((a, g) => a + g.review.blunders + g.review.mistakes, 0) / rv.length).toFixed(1), avgA = Math.round(rv.reduce((a, g) => a + g.review.acc, 0) / rv.length);
+    sec.append(h('p', { class: 'muted', text: `Son ${rv.length} oyun: ortalama isabet %${avgA}, oyun başına ${avgE} ağır hata ya da hata. Asıl ilerleme ölçün bu iki sayı; kazanma oranı daha gürültülü.` }),
+      h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, 'Oyun'), h('th', null, 'Sonuç'), h('th', null, 'İsabet'), h('th', null, 'Ağır hata / hata'))), h('tbody', null, rv.map((g) => h('tr', null, h('td', null, `Seviye ${g.level}${g.start !== C.START ? ', pozisyondan' : ''}`), h('td', null, ({ win: 'Kazandın', draw: 'Berabere', loss: 'Kaybettin' })[g.result] || ''), h('td', null, `%${g.review.acc}`), h('td', null, `${g.review.blunders} / ${g.review.mistakes}`))))));
+  }
+  const missing = G.filter((g) => !g.review);
+  if (missing.length) { const st = h('p', { class: 'small muted' }); sec.append(h('p', { class: 'muted', text: `${missing.length} oyunun henüz incelenmedi. İncelenince hataların bulmacalarına da eklenir.` }), h('div', { class: 'actions' }, btn('Eski oyunlarımı incele', async (e) => { e.target.disabled = true; let k = 0; for (const g of missing) { st.textContent = `İnceleniyor: ${++k}/${missing.length}`; await reviewGame(g); } render(); }, 'primary')), st); }
+  if (!G.length) sec.append(h('p', { class: 'muted', text: 'Bota karşı oynadıkça her oyunun isabeti ve hata sayısı burada görünecek.' }));
+  const H = S.hunt; if (H && H.n) sec.append(h('p', { class: 'muted', text: `Tehdit avı: ${H.ok}/${H.n} doğru${H.rec.length ? `, son ${H.rec.length} soruda %${Math.round((100 * H.rec.reduce((a, b) => a + b, 0)) / H.rec.length)}` : ''}.` }));
+  const first = main.querySelector('section'); main.insertBefore(sec, first ? first.nextSibling : null);
+};
+const _ayarlar3 = VIEWS.ayarlar;
+VIEWS.ayarlar = (main) => { _ayarlar3(main); main.append(h('p', { class: 'small muted', text: SF.ready ? 'Analiz motoru: Stockfish 19, cihazında çalışıyor.' : 'Analiz motoru: yerleşik hafif motor. iPhone uygulamasında Stockfish 19 kullanılır.' })); };
+
+window.HH.SF = SF; window.HH.detectThreat = detectThreat; window.HH.reviewGame = reviewGame;
+SF.init().then((ok) => { if (ok) { const sn = $('#sync-note'); if (sn) sn.textContent += ', Stockfish açık'; } });
 init();
 
 </script>

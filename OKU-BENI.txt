@@ -16,3 +16,4 @@ Notlar:
 - Bu sürümün ilerlemesi kendi kaydındadır. Çevrimiçi sürümle taşımak için iki tarafta da Ayarlar > İlerlemeyi dışa aktar / İçe aktar. İki taraf birleştirilir.
 - Koç internet varken çalışır: anahtarsız olarak soruyu Claude uygulamasına aktarır; Ayarlar > Çevrimiçi koç bölümünden kendi Anthropic API anahtarını eklersen cevap uygulama içinde gelir. Çevrimdışıyken koç düğmesi gizlenir.
 - Güncelleme: dosyaları yenileriyle değiştir; uygulama bir sonraki açılışta güncellenir.
+- Analiz motoru: stockfish-19-lite-single.js/.wasm, Stockfish 19 (GPLv3) WASM sürümü, kaynak: github.com/nmrugg/stockfish.js. Lisans metni STOCKFISH-COPYING.txt dosyasında.
