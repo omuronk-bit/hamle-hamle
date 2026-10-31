@@ -150,6 +150,10 @@ textarea{ width:100%; min-height:150px; padding:12px; border:1px solid var(--lin
 
 /* side panel */
 .side{ min-width:0; }
+.capbar{ display:flex; align-items:center; gap:8px; min-height:28px; margin:4px 0; font-size:.875rem; color:var(--ink-2); }
+.cap-p{ display:inline-flex; } .cap-p svg{ width:26px; height:26px; margin-right:-7px; }
+.cap-adv{ font-weight:600; color:var(--ink); margin-left:6px; }
+.lastmv{ margin:4px 0 0; } .lastmv p{ margin:2px 0; }
 .side > h2:first-child{ margin-top:0; }
 .turn-line{ display:flex; align-items:center; gap:10px; font-size:1.05rem; margin:0 0 6px; }
 .swatch{ width:18px; height:18px; border-radius:50%; border:1.5px solid var(--ink); flex:none; }
@@ -1685,11 +1689,40 @@ function PlaySetup(main) {
   const rows = Object.entries(Store.s.bots || {}).sort((a, b) => a[0] - b[0]);
   if (rows.length) main.append(h('section', null, h('h2', null, 'Bota karşı sonuçların'), h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, 'Seviye'), h('th', null, 'Kazandın'), h('th', null, 'Berabere'), h('th', null, 'Kaybettin'))), h('tbody', null, rows.map(([l, s]) => h('tr', null, h('td', null, `${l}: ${C.LEVELS[l].name}`), h('td', null, s.w || 0), h('td', null, s.d || 0), h('td', null, s.l || 0)))))));
 }
+// captured pieces and a plain-language line for the last moves, shown around the game board
+function capturedBy(startFen, fen, side) { // pieces of the other colour that `side` has taken
+  const o = side === 'w' ? 'b' : 'w', a = new C.Position(startFen).material().pieces[o], b = new C.Position(fen).material().pieces[o];
+  const promoted = 'qrbn'.split('').reduce((s, t) => s + Math.max(0, (b[t] || 0) - (a[t] || 0)), 0);
+  return 'qrbnp'.split('').flatMap((t) => Array(Math.max(0, (a[t] || 0) - (b[t] || 0) - (t === 'p' ? promoted : 0))).fill(t));
+}
+function drawCapBar(el, label, list, color, adv) {
+  el.innerHTML = '';
+  el.append(h('span', { class: 'cap-k', text: label }),
+    list.length ? h('span', { class: 'cap-p', role: 'img', 'aria-label': list.map((t) => PIECE_NAME[t.toUpperCase()]).join(', '), html: list.map((t) => `<svg viewBox="0 0 45 45" aria-hidden="true"><use href="#p-${color}${t.toUpperCase()}"/></svg>`).join('') }) : h('span', { class: 'muted', text: 'henüz yok' }));
+  if (adv > 0) el.append(h('span', { class: 'cap-adv', text: `+${adv}` }));
+}
+function moveSentence(r, mine) {
+  const P = new C.Position(r.fenBefore), pc = P.piece(C.sqIndex(r.from)), extra = [];
+  if (r.capture) { const t = (P.piece(C.sqIndex(r.to)) || { type: 'p' }).type; extra.push(mine ? `bir ${PIECE_NAME[t.toUpperCase()].toLowerCase()} aldın` : `${{ p: 'piyonunu', n: 'atını', b: 'filini', r: 'kaleni', q: 'vezirini' }[t]} aldı`); }
+  if (r.promo) extra.push('piyon terfi etti');
+  if (r.san.endsWith('#')) extra.push('mat!'); else if (r.san.includes('+')) extra.push('şah!');
+  const base = r.castle ? `rok (${r.san.startsWith('O-O-O') ? 'uzun' : 'kısa'})` : `${PIECE_NAME[pc.type.toUpperCase()]} ${r.from} → ${r.to}`;
+  return base + (extra.length ? ` (${extra.join(', ')})` : '');
+}
 function GameScreen(main, G) {
   const game = new C.Game(G.start); for (const u of G.moves) if (!game.move(u)) break;
   const opp = G.color === 'w' ? 'b' : 'w';
   main.append(h('header', { class: 'page-head' }, h('p', { class: 'kicker', text: `Seviye ${G.level}: ${C.LEVELS[G.level].name}. Kontrol modu ${({ off: 'kapalı', warn: 'uyarı', full: 'tam', coach: 'antrenör' })[G.mode]}.` }), h('h1', null, 'Bota karşı')));
   const { bEl, side } = playLayout(main), board = new Board(bEl, { orientation: G.color, movable: G.color });
+  const capTop = h('div', { class: 'capbar' }), capBot = h('div', { class: 'capbar' }), lastEl = h('div', { class: 'lastmv', 'aria-live': 'polite' });
+  bEl.insertBefore(capTop, bEl.firstChild); bEl.append(capBot, lastEl);
+  function drawAround() {
+    const fen = game.fen(), m = game.pos.material(), d = G.color === 'w' ? m.w - m.b : m.b - m.w;
+    drawCapBar(capTop, 'Bot aldı:', capturedBy(game.startFen, fen, opp), G.color, -d);
+    drawCapBar(capBot, 'Sen aldın:', capturedBy(game.startFen, fen, G.color), opp, d);
+    lastEl.innerHTML = '';
+    game.history.slice(-2).reverse().forEach((r, i) => { const mine = r.color === G.color; lastEl.append(h('p', { class: i ? 'small muted' : '' }, h('strong', null, (i ? 'Önceki, ' : 'Son hamle, ') + (mine ? 'sen: ' : 'bot: ')), moveSentence(r, mine))); });
+  }
   const status = h('p', { class: 'msg', 'aria-live': 'polite' }), huntBox = h('div'), cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div'), acts = h('div', { class: 'actions' });
   side.append(status, huntBox, cctBox, endBox, sheet, acts);
   let thinking = false, alive = true, inner = null; const show = { opp: false, me: false };
@@ -1711,7 +1744,8 @@ function GameScreen(main, G) {
     board.setPosition(game.fen(), { last: lastMove(), arrows });
     status.className = 'msg';
     status.textContent = G.over ? resultTitle(G) : thinking ? 'Bot düşünüyor…' : (game.pos.inCheck() ? 'Şah! Sıra sende.' : 'Sıra sende.');
-    drawSheet(sheet, game.history, game.startFen, -1, null, null);
+    drawSheet(sheet, game.history, game.startFen, -1, null, null); sheet.scrollTop = sheet.scrollHeight;
+    drawAround();
     acts.innerHTML = '';
     if (!G.over) acts.append(btn('Geri al', takeback, 'ghost'), btn('Tahtayı çevir', () => board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'), 'ghost'), btn('Teslim ol', async () => { if (await askConfirm('Teslim olursan oyun kaybedilmiş sayılır.', 'Teslim ol')) finishGame('loss', 'resign'); }, 'ghost'), coachBtn(() => ({ fen: game.fen(), title: 'Oyun', presets: [{ label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }] })));
   }
@@ -1772,6 +1806,7 @@ function GameScreen(main, G) {
 const COACH_RULES = `Sen sabırlı ve net konuşan bir satranç koçusun. Öğrencin satrancı seven ama henüz kulüp seviyesine ulaşmaya çalışan bir yetişkin. Türkçe cevap ver.
 Kurallar:
 - Yalnızca aşağıdaki POZİSYON VERİLERİ'ne dayan. Verilerde olmayan bir hamleyi, taşı ya da kareyi uydurma; emin değilsen bunu açıkça söyle.
+- Tehdit sorulduğunda "Sırası gelmeyen tarafın tehdidi" satırını esas al; "Taş alan hamleler" listesi tehdit listesi değildir, çoğu alma kötü hamledir.
 - Hamleleri Türkçe taş adlarıyla ve karelerle yaz (ör. "at f3'ten e5'e", "vezir h7'yi alır").
 - En fazla 6 kısa cümle. Önce ana fikir, sonra somut hamle(ler), en sonda "Akılda tut:" ile başlayan tek bir genel ders.
 - Değerlendirmeyi sayıyla değil sözle anlat.`;
@@ -1796,6 +1831,11 @@ async function coachFacts(fen) {
   const L = [`FEN: ${fen}`, `Sıra: ${W ? 'Beyaz' : 'Siyah'}`, `Taşlar: Beyaz ${pcs.w.join(', ')}. Siyah ${pcs.b.join(', ')}.`, `Malzeme (piyon=1): Beyaz ${mat.w}, Siyah ${mat.b}`];
   if (a && a.best) { L.push(`Motor değerlendirmesi: ${ev(a.score, a.mate)}`, `Motorun en iyi devamı (SAN): ${a.pvSan.slice(0, 6).join(' ')}`); if (a.lines) L.push('İyi adaylar: ' + a.lines.slice(0, 3).map((l) => `${l.san} (${ev(l.score, l.mate)})`).join('; ')); }
   else if (a && a.status) L.push('Oyun bitmiş: ' + a.status);
+  if (typeof detectThreat === 'function' && a && a.best && !pos.inCheck()) {
+    const o = W ? 'Siyah' : 'Beyaz'; let t = null; try { t = await detectThreat(fen); } catch (e) { t = undefined; }
+    if (t) L.push(`Sırası gelmeyen tarafın (${o}) tehdidi, motorun hesabıyla: ${o} sıra kendisine geçse ${t.san} oynar ve ${t.desc} ("-ını/-ini" sırası gelen tarafın taşı).`);
+    else if (t === null) L.push(`Sırası gelmeyen tarafın (${o}) şu an ciddi bir tehdidi yok: motor, mat ya da malzeme kazanan bir hamlesi olmadığını hesapladı.`);
+  }
   L.push(`Asılı (saldırı altında, yeterince korunmayan) taşlar: Beyaz ${lh.hanging.w.join(', ') || 'yok'}; Siyah ${lh.hanging.b.join(', ') || 'yok'}`);
   L.push(`Şah çeken hamleler: Beyaz ${cw.checks.map((x) => x.san).join(', ') || 'yok'}; Siyah ${cb.checks.map((x) => x.san).join(', ') || 'yok'}`);
   L.push(`Taş alan hamleler: Beyaz ${cw.captures.map((x) => x.san).join(', ') || 'yok'}; Siyah ${cb.captures.map((x) => x.san).join(', ') || 'yok'}`);
@@ -2331,7 +2371,7 @@ async function sfAnalyze(fen, opts = {}) {
   const r = await SF.run(fen, { depth: sfDepth(opts.depth || 5), multipv: opts.multi ? Math.min(5, L.length) : 1 });
   const top = r.lines[0] || { cp: 0, mate: null, pv: [r.best], depth: 0 }, pv = uciPv(fen, top.pv);
   const out = { best: r.best, bestSan: pv.san[0] || '', score: top.mate !== null ? (top.mate > 0 ? 10000 : -10000) : top.cp, mate: top.mate, depth: top.depth, turn: pos.turn ? 'b' : 'w', pvUci: pv.uci, pvSan: pv.san, engine: 'sf' };
-  if (opts.multi) out.lines = r.lines.map((x) => { const m = pos.moveFromUci(x.pv[0]); return m === null ? null : { uci: x.pv[0], san: pos.san(m, L), score: x.mate !== null ? (x.mate > 0 ? 10000 : -10000) : x.cp, mate: x.mate }; }).filter(Boolean);
+  if (opts.multi) out.lines = r.lines.map((x) => { const m = pos.moveFromUci(x.pv[0]); return m === null ? null : { uci: x.pv[0], san: pos.san(m, L), score: x.mate !== null ? (x.mate > 0 ? 10000 : -10000) : x.cp, mate: x.mate, pvUci: x.pv.slice(0, 8) }; }).filter(Boolean);
   return out;
 }
 async function sfReview(fen, uci, opts = {}) {
@@ -2365,16 +2405,45 @@ async function detectThreat(fen) {
   if (np.inCheck(np.turn ^ 1) || !np.legal().length) return null;
   const now = await Engine.analyze(fen, { depth: 4, timeMs: 500 }), opp = await Engine.analyze(nfen, { depth: 4, timeMs: 650, multi: true });
   if (!now || !opp || !opp.lines || !opp.lines.length) return null;
-  const S = now.mate ? (now.mate > 0 ? 10000 : -10000) : now.score;
-  const good = opp.lines.filter((l) => (l.mate && l.mate > 0 && l.mate <= 3) || (Math.max(-3000, Math.min(3000, l.score)) + Math.max(-3000, Math.min(3000, S)) >= 150));
-  if (!good.length) return null;
-  const top = good[0]; let desc = 'mat ederdi';
-  if (!(top.mate && top.mate > 0)) {
-    const vals = { p: 1, n: 3, b: 3, r: 5, q: 9 }, pv = opp.pvUci && opp.pvUci[0] === top.uci ? opp.pvUci.slice(0, 6) : [top.uci], pp = new C.Position(nfen), me = pp.turn; let mx = 0, nm = null;
-    for (const u of pv) { const m = pp.moveFromUci(u); if (m === null) break; if (pp.turn === me) { const v = pp.piece(C.sqIndex(u.slice(2, 4))); if (v && vals[v.type] > mx) { mx = vals[v.type]; nm = PIECE_NAME[v.type.toUpperCase()].toLowerCase(); } } pp.make(m); }
-    desc = nm ? `${top.san.includes('+') ? 'şah çekerek ' : ''}bir ${nm} kazanırdı` : 'malzeme kazanırdı';
+  if (now.mate && now.mate > 0) return null; // the user's own mate comes first
+  const S = now.mate ? -10000 : now.score, cl = (x) => Math.max(-3000, Math.min(3000, x));
+  // A threat must mate or win material if ignored. The eval gain alone is not enough: it also rises when the
+  // opponent merely escapes the user's own threat (saving a hanging piece), which is not a threat.
+  const vals = { p: 1, n: 3, b: 3, r: 5, q: 9 }, side = np.turn, found = [], hanging = C.looseAndHanging(fen).hanging[side ? 'b' : 'w'];
+  const isQuiet = (l) => !np.piece(C.sqIndex(l.uci.slice(2, 4))) && !/[+#=]/.test(l.san);
+  const capNow = new Set(C.cct(nfen, side ? 'b' : 'w').captures.map((x) => x.uci.slice(2, 4)));
+  // captures, checks and promotions first; a quiet move counts only when nothing direct exists, otherwise it just inherits that threat
+  const cands = opp.lines.slice(0, 5).sort((a, b) => isQuiet(a) - isQuiet(b));
+  for (const l of cands) {
+    if (l.mate && l.mate > 0 && l.mate <= 4) { found.push({ l, desc: 'mat ederdi' }); continue; }
+    if (cl(l.score) + cl(S) < 80) continue; // about a pawn: material checks below do the real filtering
+    const mover = np.piece(C.sqIndex(l.uci.slice(0, 2))), quiet = isQuiet(l);
+    if (quiet && found.length) continue;
+    let pv = l.pvUci && l.pvUci[0] === l.uci ? l.pvUci : null;
+    if (!pv) { const g = new C.Game(nfen); g.move(l.uci); const a = await Engine.analyze(g.fen(), { depth: 3, timeMs: 300 }); pv = [l.uci, ...((a && a.pvUci) || [])]; }
+    const pp = new C.Position(nfen), bal = () => { const m = pp.material(); return side ? m.b - m.w : m.w - m.b; }, b0 = bal();
+    let gain = 0, best = 0, big = null, promo = false, offered = null, created = false;
+    for (let i = 0; i < Math.min(pv.length, 4); i++) { // the threat itself and its follow-up, not later play
+      const m = pp.moveFromUci(pv[i]); if (m === null) break;
+      const to = pv[i].slice(2, 4);
+      if (i === 1 && !pp.piece(C.sqIndex(to))) offered = to; // a piece the user steps forward (gambit) is not taken by the threat
+      if (i === 2 && to === offered) break;
+      if (i === 2 && pp.piece(C.sqIndex(to)) && !capNow.has(to)) created = true; // the quiet move made a new capture possible
+      if (pp.turn === side) { const v = pp.piece(C.sqIndex(pv[i].slice(2, 4))); if (v && (!big || vals[v.type] > vals[big])) big = v.type; if (pv[i].length > 4) promo = true; }
+      pp.make(m);
+      if (i % 2 === 1 || i === pv.length - 1) { gain = bal() - b0; best = Math.max(best, gain); } // measured after the user's reply
+    }
+    if (best < 1) continue; gain = Math.max(gain, best); // the user winning something back elsewhere later does not cancel the threat
+    // a piece the user already attacks that runs away and grabs something smaller on the way is escaping, not threatening
+    if (mover && hanging.includes(l.uci.slice(0, 2)) && gain < vals[mover.type]) continue;
+    // a quiet move only threatens if the user cannot simply answer it (a fork, a trapped piece), so check the user's best reply
+    if (quiet && !created && !promo) continue;
+    if (quiet) { const g = new C.Game(nfen); g.move(l.uci); const a = await Engine.analyze(g.fen(), { depth: 4, timeMs: 500 }); if (!a || cl(a.mate ? (a.mate > 0 ? 10000 : -10000) : a.score) > cl(S) - 150) continue; }
+    const yours = { p: 'piyonunu', n: 'atını', b: 'filini', r: 'kaleni', q: 'vezirini' }[big], chk = l.san.includes('+') ? 'şah çekerek ' : '';
+    found.push({ l, desc: !big ? (promo ? 'piyonunu vezire çıkarırdı' : `malzeme kazanırdı (yaklaşık ${gain} piyon)`) : gain >= vals[big] - 0.5 ? `${chk}${yours} kazanırdı` : `${chk}${yours} alırdı; net kazancı yaklaşık ${gain} piyon` });
   }
-  return { uci: top.uci, san: top.san, desc, alts: good.map((l) => l.uci) };
+  if (!found.length) return null;
+  return { uci: found[0].l.uci, san: found[0].l.san, desc: found[0].desc, alts: found.map((x) => x.l.uci) };
 }
 function HuntController(board, box, G, getGame, refresh) {
   const H = Store.s.hunt || (Store.s.hunt = { n: 0, ok: 0, rec: [] });
