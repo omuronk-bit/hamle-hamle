@@ -104,6 +104,10 @@ body.has-coach .coach-btn{ display:inline-flex !important; }
 .seg button{ white-space:nowrap; flex:none; border:0; background:transparent; padding:9px 14px; cursor:pointer; color:var(--ink-2); font-weight:500; border-right:1px solid var(--line); }
 .seg button:last-child{ border-right:0; }
 .seg button[aria-pressed="true"]{ background:var(--ink); color:var(--paper); }
+.seg.grid2{ display:grid; grid-template-columns:1fr 1fr; }
+.seg.grid2 button{ border-right:0; border-bottom:1px solid var(--line); }
+.seg.grid2 button:nth-child(odd){ border-right:1px solid var(--line); }
+.seg.grid2 button:nth-last-child(-n+2){ border-bottom:0; }
 .field{ margin:0 0 18px; }
 .field > label,.field > .label{ display:block; font-weight:600; margin:0 0 8px; }
 input[type=range]{ width:min(340px,100%); accent-color:var(--pen); }
@@ -1701,7 +1705,7 @@ function PlaySetup(main) {
   main.append(h('section', null,
     h('div', { class: 'field' }, h('span', { class: 'label' }, 'Rengin'), seg([['w', 'Beyaz'], ['b', 'Siyah'], ['r', 'Rastgele']], 'w', (v) => { color = v; }, 'Renk')),
     h('div', { class: 'field' }, h('label', null, 'Bot seviyesi'), h('div', { class: 'range-row' }, range, lvl)),
-    h('div', { class: 'field' }, h('span', { class: 'label' }, 'Kontrol modu'), seg([['coach', 'Antrenör'], ['warn', 'Uyarı'], ['full', 'Tam'], ['off', 'Kapalı']], 'coach', (v) => { mode = v; note.textContent = notes[v]; }, 'Kontrol modu'), note),
+    h('div', { class: 'field' }, h('span', { class: 'label' }, 'Kontrol modu'), Object.assign(seg([['coach', 'Tehdit sorar'], ['warn', 'Hatada durdurur'], ['full', 'Her şeyi gösterir'], ['off', 'Serbest']], 'coach', (v) => { mode = v; note.textContent = notes[v]; }, 'Kontrol modu'), { className: 'seg grid2' }), note),
     h('div', { class: 'actions' }, btn('Oyunu başlat', () => { Store.s.cur = newGameState({ level, mode, color }); Store.touch(); render(); }, 'primary'))));
   const rows = Object.entries(Store.s.bots || {}).sort((a, b) => a[0] - b[0]);
   if (rows.length) main.append(h('section', null, h('h2', null, 'Bota karşı sonuçların'), h('table', { class: 'table' }, h('thead', null, h('tr', null, h('th', null, 'Seviye'), h('th', null, 'Kazandın'), h('th', null, 'Berabere'), h('th', null, 'Kaybettin'))), h('tbody', null, rows.map(([l, s]) => h('tr', null, h('td', null, `${l}: ${C.LEVELS[l].name}`), h('td', null, s.w || 0), h('td', null, s.d || 0), h('td', null, s.l || 0)))))));
@@ -1824,7 +1828,8 @@ function GameScreen(main, G) {
     endBox.innerHTML = '';
     endBox.append(h('div', { class: 'callout' }, h('h2', null, resultTitle(G)), h('p', null, resultText(G)), h('div', { class: 'actions' },
       btn('Oyunu incele', () => { const g = Object.assign({}, G); Store.s.cur = null; Store.touch(); main.innerHTML = ''; inner = ReviewScreen(main, { start: g.start, moves: g.moves, color: g.color, level: g.level, id: g.id, title: 'Oyun incelemesi' }); }, 'primary'),
-      btn('Yeni oyun', () => { Store.s.cur = null; Store.touch(); render(); }))));
+      btn('Aynı seviyede yeni oyun', () => { Store.s.cur = newGameState({ level: G.level, mode: G.mode, color: G.color }); Store.touch(); render(); }),
+      btn('Ayarları değiştir', () => { Store.s.cur = null; Store.touch(); render(); }, 'ghost'))));
   }
   function takeback() { if (thinking || G.over || !game.history.length) return; do { game.undo(); G.moves.pop(); } while (game.history.length && game.turn() !== G.color); G.takebacks = (G.takebacks || 0) + 1; if (hunt) hunt.cancel(); Store.touch(); refresh(); if (game.turn() !== G.color) botTurn(); }
   refresh();
@@ -1919,11 +1924,15 @@ function openCoach(ctx) {
 const VIEWS = {};
 function buildSession(mins) {
   const steps = [{ k: 'coords', s: mins >= 15 ? 45 : 30 }, { k: 'puzzles', n: mins === 5 ? 5 : mins === 15 ? 8 : 12 }];
-  if (mins >= 15) { const L = nextLesson(); steps.push(L ? { k: 'lesson', id: L.id } : { k: 'endgame', id: pickEndgameId() }); }
+  if (mins === 15) { // one day in three each: lesson, endgame, opening
+    const L = nextLesson(), o = nextOpening(), rot = today() % 3;
+    steps.push(rot === 1 || (!L && !(rot === 2 && o)) ? { k: 'endgame', id: pickEndgameId() } : rot === 2 && o ? { k: 'opening', id: o.id } : { k: 'lesson', id: L.id });
+  }
+  if (mins >= 30) { const L = nextLesson(); steps.push(L ? { k: 'lesson', id: L.id } : { k: 'endgame', id: pickEndgameId() }); }
   if (mins >= 30) { const o = nextOpening(); if (o) steps.push({ k: 'opening', id: o.id }); steps.push({ k: 'game' }); }
   return { mins, steps, i: 0, day: today(), done: false };
 }
-const SESSION_DESC = { 5: 'Isınma ve 5 bulmaca.', 15: 'Isınma, 8 bulmaca ve sıradaki ders.', 30: 'Isınma, 12 bulmaca, bir ders, açılış tekrarı ve bota karşı bir oyun.' };
+const SESSION_DESC = { 5: 'Isınma ve 5 bulmaca.', get 15() { return `Isınma, 8 bulmaca ve ${({ lesson: 'sıradaki ders', endgame: 'bir oyun sonu alıştırması', opening: 'açılış tekrarı' })[buildSession(15).steps[2].k]}.`; }, 30: 'Isınma, 12 bulmaca, bir ders, açılış tekrarı ve bota karşı bir oyun.' };
 VIEWS.bugun = (main) => {
   const S = Store.s, t = today(), grid = h('div', { class: 'today' }), left = h('div', { class: 'today-main' }), right = h('div', { class: 'today-side' });
   left.append(h('header', { class: 'page-head' }, h('p', { class: 'kicker', text: dateTR() }), h('h1', null, 'Bugün')));
@@ -2544,7 +2553,7 @@ async function afterGame(G, rec, endBox) {
   const r = await reviewGame(rec); if (!r) { box.remove(); return; }
   box.innerHTML = '';
   box.append(...[h('h3', null, 'Otomatik inceleme'), h('p', null, `İsabet %${r.acc}. Ağır hata ${r.blunders}, hata ${r.mistakes}.`),
-    r.added ? h('p', { class: 'small muted', text: `${r.added} hatan “Benim hatalarım” bulmacalarına eklendi.` }) : h('p', { class: 'small muted', text: 'Bu oyunda bulmacaya çevrilecek ciddi hata yok.' }),
+    r.added ? h('div', { class: 'actions' }, btn(`Bu oyundaki hatalarımı çöz (${r.added})`, () => go('bulmaca-benim'), 'primary')) : h('p', { class: 'small muted', text: 'Bu oyunda bulmacaya çevrilecek ciddi hata yok.' }),
     G.hunt ? h('p', { class: 'small muted', text: `Tehdit avı: ${G.hunt.ok}/${G.hunt.n} doğru.` }) : null,
     h('p', { class: 'small muted', text: `Sonraki oyun için önerilen seviye: ${suggestLevel()}.` })].filter(Boolean));
 }
