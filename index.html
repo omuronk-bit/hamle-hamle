@@ -1747,7 +1747,7 @@ function GameScreen(main, G) {
     drawSheet(sheet, game.history, game.startFen, -1, null, null); sheet.scrollTop = sheet.scrollHeight;
     drawAround();
     acts.innerHTML = '';
-    if (!G.over) acts.append(btn('Geri al', takeback, 'ghost'), btn('Tahtayı çevir', () => board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'), 'ghost'), btn('Teslim ol', async () => { if (await askConfirm('Teslim olursan oyun kaybedilmiş sayılır.', 'Teslim ol')) finishGame('loss', 'resign'); }, 'ghost'), coachBtn(() => ({ fen: game.fen(), title: 'Oyun', presets: [{ label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }] })));
+    if (!G.over) acts.append(btn('Geri al', takeback, 'ghost'), btn('Tahtayı çevir', () => board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'), 'ghost'), btn('Teslim ol', async () => { if (await askConfirm('Teslim olursan oyun kaybedilmiş sayılır.', 'Teslim ol')) finishGame('loss', 'resign'); }, 'ghost'), coachBtn(() => ({ fen: game.fen(), title: 'Oyun', presets: [{ label: 'En iyi hamle ne, neden?', deep: true, q: 'Bu pozisyonda en iyi hamle ne ve neden? Motorun en iyi hamlesini sade bir dille açıkla: hangi taş nereye gider, ne işe yarar (neyi tehdit eder, neyi korur ya da engeller). Rakibin bir tehdidi varsa önce onu söyle. Akla gelen ama kötü olan bir alternatifi de kısaca, neden kötü olduğuyla anlat.' }, { label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }] })));
   }
   function warnDialog(w, before, uci) {
     return new Promise((resolve) => {
@@ -2216,9 +2216,9 @@ const getKey = () => { try { return localStorage.getItem(KEY_LS) || ''; } catch 
 const setKey = (k) => { try { if (k) localStorage.setItem(KEY_LS, k); else localStorage.removeItem(KEY_LS); } catch (e) { toast('Anahtar bu cihazda saklanamadı.'); } };
 const coachMode = () => (STANDALONE ? (getKey() ? 'api' : 'handoff') : 'claude');
 async function apiStream(system, user, quick, onText, signal) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: quick ? 'claude-haiku-5-5' : 'claude-sonnet-5-5', max_tokens: quick ? 700 : 1200, stream: true, system, messages: [{ role: 'user', content: user }] }) });
+  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: quick ? 'claude-haiku-5-5' : 'claude-sonnet-5-5', max_tokens: quick ? 4000 : 8000, output_config: { effort: quick ? 'low' : 'medium' }, stream: true, system, messages: [{ role: 'user', content: user }] }) });
   if (!res.ok) { let msg = ''; try { const j = await res.json(); msg = (j.error && j.error.message) || ''; } catch (e) { /* no body */ } const er = new Error(msg); er.status = res.status; throw er; }
-  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '', text = '';
+  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '', text = '', stop = null;
   for (;;) {
     const { value, done } = await rd.read(); if (done) break;
     buf += dec.decode(value, { stream: true }); let n;
@@ -2226,9 +2226,12 @@ async function apiStream(system, user, quick, onText, signal) {
       const line = buf.slice(0, n).trim(); buf = buf.slice(n + 1);
       if (!line.startsWith('data:')) continue; let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
       if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') { text += ev.delta.text; onText(text); }
+      else if (ev.type === 'message_delta' && ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason;
       else if (ev.type === 'error') { const er = new Error((ev.error && ev.error.message) || ''); er.status = ev.error && ev.error.type === 'overloaded_error' ? 529 : 500; throw er; }
     }
   }
+  if (!text && stop === 'refusal') return 'Bu soruya cevap verilemedi. Soruyu farklı sor.';
+  if (!text && stop === 'max_tokens') return 'Cevap sınıra takıldı. Soruyu daha kısa sor ya da tekrar dene.';
   return text;
 }
 function apiErrorText(e) { const s = e && e.status; if (s === 401 || s === 403) return 'API anahtarı geçersiz ya da yetkisiz. Ayarlar’dan kontrol et.'; if (s === 429) return 'İstek sınırına takıldın. Biraz sonra tekrar dene.'; if (s === 529 || s === 503) return 'Servis şu an yoğun. Biraz sonra tekrar dene.'; if (s === 400) return 'İstek reddedildi' + (e.message ? ': ' + e.message : '.'); if (!navigator.onLine) return 'İnternet bağlantısı yok.'; return 'Bağlantı kurulamadı. Tekrar dene.'; }
@@ -2562,9 +2565,9 @@ function studentProfile() {
   return `ÖĞRENCİ PROFİLİ (cevabını buna göre kişiselleştir; uygunsa zayıf konusuna ya da tekrar eden hatasına bağla): bulmaca puanı ${S.profile.rating}; zayıf bulmaca konuları: ${wk || 'henüz belirsiz'}; ${q}${H && H.n ? `; tehdit avında %${Math.round((100 * H.ok) / H.n)} isabet (${H.n} soru)` : ''}; bota karşı seviye ${suggestLevel()}.${notes ? ' Öğrencinin kendi notu: ' + notes : ''}`;
 }
 async function apiMessages(system, messages, quick, onText, signal) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: quick ? 'claude-haiku-5-5' : 'claude-sonnet-5-5', max_tokens: quick ? 700 : 1200, stream: true, system, messages: messages.map((m) => ({ role: m.role, content: m.content })) }) });
+  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-api-key': getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body: JSON.stringify({ model: quick ? 'claude-haiku-5-5' : 'claude-sonnet-5-5', max_tokens: quick ? 4000 : 8000, output_config: { effort: quick ? 'low' : 'medium' }, stream: true, system, messages: messages.map((m) => ({ role: m.role, content: m.content })) }) });
   if (!res.ok) { let msg = ''; try { const j = await res.json(); msg = (j.error && j.error.message) || ''; } catch (e) { /* no body */ } const er = new Error(msg); er.status = res.status; throw er; }
-  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '', text = '';
+  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '', text = '', stop = null;
   for (;;) {
     const { value, done } = await rd.read(); if (done) break;
     buf += dec.decode(value, { stream: true }); let n;
@@ -2572,9 +2575,12 @@ async function apiMessages(system, messages, quick, onText, signal) {
       const line = buf.slice(0, n).trim(); buf = buf.slice(n + 1);
       if (!line.startsWith('data:')) continue; let ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
       if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') { text += ev.delta.text; if (onText) onText(text); }
+      else if (ev.type === 'message_delta' && ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason;
       else if (ev.type === 'error') { const er = new Error((ev.error && ev.error.message) || ''); er.status = ev.error && ev.error.type === 'overloaded_error' ? 529 : 500; throw er; }
     }
   }
+  if (!text && stop === 'refusal') return 'Bu soruya cevap verilemedi. Soruyu farklı sor.';
+  if (!text && stop === 'max_tokens') return 'Cevap sınıra takıldı. Soruyu daha kısa sor ya da tekrar dene.';
   return text;
 }
 async function sampleChat(thread, quick, onText, signal) {
@@ -2607,12 +2613,12 @@ function openCoachChat(ctx, mode) {
     const aEl = h('div', { class: 'chat-a', text: 'Düşünüyor…' }); log.append(h('p', { class: 'chat-q', text: q }), aEl); ta.value = ''; presets.hidden = true;
     const my = new AbortController(); ctl = my; stopB.hidden = false;
     try {
-      const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; }, my.signal);
+      const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal);
       aEl.textContent = t || 'Boş cevap geldi; tekrar sor.'; thread.push({ role: 'assistant', content: t || '' }); if (t) logAnswer(ctx, q, t);
     } catch (e) { thread.pop(); aEl.textContent = mode === 'api' ? (e && e.name === 'AbortError' ? 'Durduruldu.' : apiErrorText(e)) : sampleErrorText(e); }
     finally { ctl = null; stopB.hidden = true; ta.placeholder = 'Devam sorusu sor (ör. “Peki fili geri çekseydim?”)'; log.scrollTop = log.scrollHeight; }
   }
-  (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, true))));
+  (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, !p.deep))));
   m.append(presets, log, h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Sor', () => ask(ta.value.trim(), false), 'primary'), stopB));
   m.onclose = () => { if (ctl) ctl.abort(); };
 }
