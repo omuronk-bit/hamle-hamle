@@ -83,14 +83,14 @@ main#view{ width:100%; max-width:1120px; margin:0 auto; padding:20px 16px calc(8
 h1{ font:700 clamp(2rem,4.2vw,2.75rem)/1.06 var(--serif); letter-spacing:-.018em; margin:0 0 10px; }
 h2{ font:600 1.3rem/1.25 var(--serif); margin:0 0 10px; letter-spacing:-.005em; }
 h3{ font:600 1rem/1.3 var(--sans); margin:0 0 6px; }
-.lead{ font:italic 400 1.14rem/1.55 var(--serif); color:var(--ink-2); margin:0; max-width:60ch; }
+.lead{ font:400 1.02rem/1.55 var(--sans); color:var(--ink-2); margin:0; max-width:60ch; }
 .prose p{ font:400 1.07rem/1.7 var(--serif); margin:0 0 14px; max-width:64ch; }
 .muted{ color:var(--ink-2); } .small{ font-size:.875rem; }
 section{ margin:0 0 30px; }
 .big-num{ font:700 2.6rem/1 var(--serif); margin:0 0 10px; font-variant-numeric:tabular-nums; }
 
 /* controls */
-.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:9px 16px; border-radius:var(--r-s); border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:500; cursor:pointer; text-decoration:none; }
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:9px 16px; border-radius:var(--r-s); border:1px solid var(--line); background:var(--surface); color:var(--ink); font-weight:500; cursor:pointer; text-decoration:none; }
 .btn:hover{ border-color:var(--ink-3); }
 .btn.primary{ background:var(--pen); border-color:var(--pen); color:var(--pen-ink); }
 .btn.primary:hover{ filter:brightness(1.07); }
@@ -265,6 +265,13 @@ a.card:hover{ border-color:var(--ink-3); }
 .spark{ width:100%; max-width:520px; height:auto; display:block; overflow:visible; }
 .spark polyline{ fill:none; stroke:var(--pen); stroke-width:2; vector-effect:non-scaling-stroke; }
 .spark .mid{ stroke:var(--line); stroke-dasharray:3 3; }
+.spark .end{ fill:var(--pen); }
+.spark text{ fill:var(--ink-3); font:500 11px var(--sans); font-variant-numeric:tabular-nums; }
+.rating-steps{ list-style:none; display:flex; flex-wrap:wrap; gap:6px 18px; padding:0; margin:6px 0 0; }
+.rating-steps li{ display:grid; }
+.rating-steps .v{ font:600 1.15rem var(--serif); font-variant-numeric:tabular-nums; }
+.rating-steps .d{ font-size:.8rem; color:var(--ink-3); }
+.rating-steps li + li .v::before{ content:'→ '; color:var(--ink-3); font-weight:400; }
 .spark .gdot{ fill:var(--flag); cursor:pointer; }
 .graph{ margin:12px 0; }
 .cct{ border:1px solid var(--line); border-radius:var(--r-m); padding:8px 12px; margin:10px 0; background:var(--surface); }
@@ -1827,7 +1834,7 @@ function GameScreen(main, G) {
   function showEnd() {
     endBox.innerHTML = '';
     endBox.append(h('div', { class: 'callout' }, h('h2', null, resultTitle(G)), h('p', null, resultText(G)), h('div', { class: 'actions' },
-      btn('Oyunu incele', () => { const g = Object.assign({}, G); Store.s.cur = null; Store.touch(); main.innerHTML = ''; inner = ReviewScreen(main, { start: g.start, moves: g.moves, color: g.color, level: g.level, id: g.id, title: 'Oyun incelemesi' }); }, 'primary'),
+      btn('Oyunu incele', () => { const g = Object.assign({}, G); Store.s.cur = null; Store.touch(); main.innerHTML = ''; inner = ReviewScreen(main, { start: g.start, moves: g.moves, color: g.color, level: g.level, id: g.id, title: 'Oyun incelemesi' }); }),
       btn('Aynı seviyede yeni oyun', () => { Store.s.cur = newGameState({ level: G.level, mode: G.mode, color: G.color }); Store.touch(); render(); }),
       btn('Ayarları değiştir', () => { Store.s.cur = null; Store.touch(); render(); }, 'ghost'))));
   }
@@ -2059,7 +2066,9 @@ VIEWS.ilerleme = (main) => {
   const S = Store.s, t = today();
   main.append(h('header', { class: 'page-head' }, h('h1', null, 'İlerleme'), h('p', { class: 'lead', text: 'Seri tutmuyoruz; önemli olan aralıklarla geri gelmek.' })));
   const H = S.profile.hist.slice(-60), sec = h('section', null, h('h2', null, 'Bulmaca puanı'), h('p', { class: 'big-num', text: String(S.profile.rating) }));
-  if (H.length > 1) { const lo = Math.min(...H.map((x) => x[1])) - 20, hi = Math.max(...H.map((x) => x[1])) + 20, W = 300, Hh = 70; const pts = H.map((x, i) => `${((i / (H.length - 1)) * W).toFixed(1)},${(Hh - ((x[1] - lo) / (hi - lo)) * Hh).toFixed(1)}`).join(' '); sec.append(h('div', { html: `<svg class="spark" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Puan geçmişi"><polyline points="${pts}"/></svg>` })); }
+  const dayLabel = (d) => { const x = new Date(d * 864e5); return `${x.getDate()} ${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][x.getMonth()]}`; };
+  if (H.length > 1 && H.length <= 6) sec.append(h('ol', { class: 'rating-steps' }, H.map(([d, r]) => h('li', null, h('span', { class: 'v', text: String(r) }), h('span', { class: 'd', text: dayLabel(d) })))));
+  else if (H.length > 6) { const lo = Math.min(...H.map((x) => x[1])) - 20, hi = Math.max(...H.map((x) => x[1])) + 20, W = 300, Hh = 70, X = (i) => (i / (H.length - 1)) * W, Y = (r) => Hh - ((r - lo) / (hi - lo)) * Hh; const pts = H.map((x, i) => `${X(i).toFixed(1)},${Y(x[1]).toFixed(1)}`).join(' '), a = H[0], z = H[H.length - 1]; sec.append(h('div', { html: `<svg class="spark" viewBox="0 -14 ${W} ${Hh + 30}" role="img" aria-label="Puan geçmişi: ${dayLabel(a[0])} ${a[1]}, ${dayLabel(z[0])} ${z[1]}"><polyline points="${pts}"/><circle cx="${W}" cy="${Y(z[1]).toFixed(1)}" r="3.5" class="end"/><text x="0" y="${Hh + 14}">${dayLabel(a[0])} · ${a[1]}</text><text x="${W}" y="${Hh + 14}" text-anchor="end">${dayLabel(z[0])} · ${z[1]}</text></svg>` })); }
   main.append(sec);
   const cal = h('div', { class: 'cal', role: 'img', 'aria-label': 'Son 8 hafta' });
   for (let d = t - 55; d <= t; d++) { const c = S.days[d] || 0; cal.append(h('span', { class: c >= 20 ? 'a3' : c >= 8 ? 'a2' : c > 0 ? 'a1' : '', title: c ? `${c} etkinlik` : 'boş' })); }
@@ -2164,10 +2173,10 @@ function bookExtra(game) {
 }
 function navRow(game, future, show, board) {
   return h('div', { class: 'navrow' },
-    btn('Başa', () => { while (game().history.length) future.push(game().undo().uci); show(); }, 'ghost'),
+    btn('Başa', () => { while (game().history.length) future.push(game().undo().uci); show(); }),
     btn('Geri', () => { const r = game().undo(); if (r) { future.push(r.uci); show(); } }),
     btn('İleri', () => { const u = future.pop(); if (u) { game().move(u); show(); } }),
-    btn('Sona', () => { while (future.length) game().move(future.pop()); show(); }, 'ghost'),
+    btn('Sona', () => { while (future.length) game().move(future.pop()); show(); }),
     btn('Çevir', () => board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'), 'ghost'));
 }
 
@@ -2317,7 +2326,7 @@ function coachSettings() {
   const status = h('p', { class: 'small', text: st() }), msg = h('p', { class: 'msg' }), inp = h('input', { type: 'password', placeholder: 'sk-ant-...', autocomplete: 'off', 'aria-label': 'Anthropic API anahtarı' });
   const say = (t, c = '') => { msg.className = 'msg ' + c; msg.textContent = t; status.textContent = st(); };
   return h('section', null, h('h2', null, 'Çevrimiçi koç'),
-    h('p', { class: 'muted', text: 'İnternet varken koç iki yoldan çalışır. Anahtarsız: soru, motorun pozisyon verileriyle panoya kopyalanır ve Claude açılır. Anahtarlı: cevap uygulamanın içinde gelir. Anahtar yalnızca bu cihazda saklanır ve ilerleme yedeğine girmez. API kullanımı Claude aboneliğinden ayrı ücretlendirilir; kısa sorular soru başına genelde bir sentin altında kalır.' }),
+    h('p', { class: 'muted', text: 'API anahtarı kayıtlıysa cevap uygulamanın içinde gelir; değilse soru Claude uygulamasına aktarılır. Anahtar yalnızca bu cihazda saklanır, kullanımı Claude aboneliğinden ayrı ücretlenir.' }),
     status, h('div', { class: 'key-row' }, inp, btn('Kaydet', () => { const k = inp.value.trim(); if (!/^sk-ant-/.test(k)) return say('Anahtar “sk-ant-” ile başlamalı.', 'bad'); setKey(k); inp.value = ''; say('Kaydedildi.', 'good'); }, 'primary')),
     h('div', { class: 'actions' }, btn('Bağlantıyı dene', async () => { if (!getKey()) return say('Önce anahtarı kaydet.', 'bad'); say('Deneniyor…'); try { await apiStream('Kısa cevap ver.', 'Sadece "tamam" yaz.', true, () => {}); say('Bağlantı çalışıyor.', 'good'); } catch (e) { say(apiErrorText(e), 'bad'); } }), btn('Anahtarı sil', () => { setKey(''); say('Anahtar silindi.'); }, 'ghost')), msg);
 }
