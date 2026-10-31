@@ -163,6 +163,9 @@ textarea{ width:100%; min-height:150px; padding:12px; border:1px solid var(--lin
 .page-head.compact h1{ font-size:1.35rem; margin:0; }
 .page-head.compact .kicker{ margin:0; }
 .menu-list{ display:grid; gap:8px; margin-top:12px; }
+.sheet-bg.light{ background:rgba(8,14,20,.12); }
+.modal.half{ max-height:46vh; }
+.modal.half .chatlog{ max-height:none; }
 @media (display-mode: standalone){ .topbar{ display:none; } }
 .side > h2:first-child{ margin-top:0; }
 .turn-line{ display:flex; align-items:center; gap:10px; font-size:1.05rem; margin:0 0 6px; }
@@ -190,6 +193,7 @@ textarea{ width:100%; min-height:150px; padding:12px; border:1px solid var(--lin
 .sheet-bg{ position:fixed; inset:0; z-index:60; display:flex; align-items:flex-end; justify-content:center; background:rgba(8,14,20,.45); }
 .modal{ width:min(640px,100%); max-height:min(88vh,780px); overflow:auto; background:var(--surface); border-radius:var(--r-l) var(--r-l) 0 0; padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px)); }
 @media (min-width:720px){ .sheet-bg{ align-items:center; } .modal{ border-radius:var(--r-l); padding:24px; } }
+@media (min-width:720px){ .sheet-bg.light{ align-items:flex-end; justify-content:flex-end; padding:16px; } .modal.half{ width:min(460px,100%); max-height:70vh; } }
 .modal-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:4px; }
 .modal-head h2{ margin:4px 0 0; }
 .answer{ white-space:pre-wrap; font:400 1.04rem/1.65 var(--serif); padding:12px 0 4px; min-height:2em; }
@@ -1742,7 +1746,8 @@ function GameScreen(main, G) {
   const cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div');
   side.append(cctBox, endBox, sheet);
   const PRESETS = [{ label: 'En iyi hamle ne, neden?', deep: true, q: 'Bu pozisyonda en iyi hamle ne ve neden? Motorun en iyi hamlesini sade bir dille açıkla: hangi taş nereye gider, ne işe yarar (neyi tehdit eder, neyi korur ya da engeller). Rakibin bir tehdidi varsa önce onu söyle. Akla gelen ama kötü olan bir alternatifi de kısaca, neden kötü olduğuyla anlat.' }, { label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }];
-  const coachCtx = (auto) => ({ fen: game.fen(), title: 'Oyun', presets: PRESETS, autoAsk: auto ? PRESETS[0] : null });
+  let bestArrow = null;
+  const coachCtx = (auto) => ({ fen: game.fen(), title: 'Oyun', presets: PRESETS, autoAsk: auto ? PRESETS[0] : null, showBest: (u) => { bestArrow = u; refresh(); }, onClose: () => { bestArrow = null; if (alive) refresh(); } });
   function moreMenu() {
     const m = modal('Oyun');
     m.append(h('div', { class: 'menu-list' },
@@ -1756,6 +1761,7 @@ function GameScreen(main, G) {
   function cctData() { const fen = game.fen(), dd = (o) => { const m = new Map(); [...o.checks, ...o.captures].forEach((x) => m.set(x.uci, x)); return [...m.values()]; }; const a = C.cct(fen, opp), b = C.cct(fen, G.color); return { opp: dd(a), me: dd(b), oc: a.checks.length, oa: a.captures.length, mc: b.checks.length, ma: b.captures.length }; }
   function refresh() {
     const ut = userTurn(), arrows = (hunt && hunt.arrow()) ? [hunt.arrow()] : [];
+    if (bestArrow) arrows.push([bestArrow.slice(0, 2), bestArrow.slice(2, 4), 'good']);
     board.hang = ((G.mode === 'warn' || G.mode === 'full') && ut) ? C.looseAndHanging(game.fen()).hanging[G.color] : [];
     cctBox.innerHTML = '';
     if (G.mode === 'full' && ut) {
@@ -2639,7 +2645,10 @@ function logAnswer(ctx, q, a) { const Q = coachQ(); Q.unshift({ id: Date.now() +
 // in-app conversation (Claude inside claude.ai, or the user's own API key)
 function openCoachChat(ctx, mode) {
   const m = modal('Koça sor');
-  m.append(h('p', { class: 'small muted', text: 'Koç seni tanıyor: zayıf konuların, son oyunların ve notların soruya ekleniyor. Cevaptan sonra devam sorusu sorabilirsin.' }));
+  if (ctx.showBest) { // keep the board in view and point at the engine's move the answer is about
+    m.classList.add('half'); m.parentNode.classList.add('light'); window.scrollTo(0, 0);
+    Engine.analyze(ctx.fen, { depth: 5, timeMs: 1200, multi: true }).then((a) => { if (a && a.best && m.isConnected) ctx.showBest(a.best); }, () => {});
+  } else m.append(h('p', { class: 'small muted', text: 'Koç seni tanıyor: zayıf konuların, son oyunların ve notların soruya ekleniyor. Cevaptan sonra devam sorusu sorabilirsin.' }));
   const presets = h('div', { class: 'actions' }), log = h('div', { class: 'chatlog', 'aria-live': 'polite' }), ta = h('textarea', { rows: '2', placeholder: 'Kendi sorunu yaz', 'aria-label': 'Soru', style: { minHeight: '64px' } });
   const stopB = btn('Durdur', () => { if (ctl) ctl.abort(); }, 'ghost'); stopB.hidden = true;
   const thread = []; let ctl = null, tier = true;
@@ -2652,14 +2661,14 @@ function openCoachChat(ctx, mode) {
     const aEl = h('div', { class: 'chat-a', text: 'Düşünüyor…' }); log.append(h('p', { class: 'chat-q', text: label || q }), aEl); ta.value = ''; presets.hidden = true;
     const my = new AbortController(); ctl = my; stopB.hidden = false;
     try {
-      const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal);
+      const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; m.scrollTop = m.scrollHeight; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; m.scrollTop = m.scrollHeight; }, my.signal);
       aEl.textContent = t || 'Boş cevap geldi; tekrar sor.'; thread.push({ role: 'assistant', content: t || '' }); if (t) logAnswer(ctx, label || q, t);
     } catch (e) { thread.pop(); aEl.textContent = mode === 'api' ? (e && e.name === 'AbortError' ? 'Durduruldu.' : apiErrorText(e)) : sampleErrorText(e); }
-    finally { ctl = null; stopB.hidden = true; ta.placeholder = 'Devam sorusu sor (ör. “Peki fili geri çekseydim?”)'; log.scrollTop = log.scrollHeight; }
+    finally { ctl = null; stopB.hidden = true; ta.placeholder = 'Devam sorusu sor (ör. “Peki fili geri çekseydim?”)'; log.scrollTop = log.scrollHeight; m.scrollTop = m.scrollHeight; }
   }
   (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, !p.deep, p.label))));
   m.append(presets, log, h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Sor', () => ask(ta.value.trim(), false), 'primary'), stopB));
-  m.onclose = () => { if (ctl) ctl.abort(); };
+  m.onclose = () => { if (ctl) ctl.abort(); if (ctx.onClose) ctx.onClose(); };
   if (ctx.autoAsk) ask(ctx.autoAsk.q, !ctx.autoAsk.deep, ctx.autoAsk.label); // one tap from the game bar
 }
 
