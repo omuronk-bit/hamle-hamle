@@ -1238,10 +1238,13 @@ function pickPuzzle(o = {}) {
   for (let i = 0; i < c.length; i++) { r -= w[i]; if (r <= 0) return c[i]; }
   return c[c.length - 1];
 }
+const REVIEW_CAP = 15; // reviews per day; the rest wait, so a missed day never turns into a pile
+function reviewedToday() { const t = today(); return Object.values(Store.s.srs).filter((x) => x.l === t && x.n > 1).length; }
+function dueTodayIds() { return dueIds().slice(0, Math.max(0, REVIEW_CAP - reviewedToday())); }
 function dueIds() { const t = today(), S = Store.s; return Object.entries(S.srs).filter(([id, s]) => s.d <= t && getPuzzle(id)).sort((a, b) => ((t - b[1].d) / (INTERVALS[b[1].b] || 1)) - ((t - a[1].d) / (INTERVALS[a[1].b] || 1))).map(([id]) => id); }
 function mixedQueue(o = {}) {
   const seen = new Set(), retried = new Set(), retry = []; let served = 0;
-  const due = o.mode === 'new' ? [] : dueIds().filter((id) => !o.themes || (getPuzzle(id).themes || []).some((t) => o.themes.includes(t)));
+  const due = o.mode === 'new' ? [] : dueTodayIds().filter((id) => !o.themes || (getPuzzle(id).themes || []).some((t) => o.themes.includes(t)));
   return {
     next() {
       if (o.limit && served >= o.limit) return null;
@@ -1924,7 +1927,9 @@ VIEWS.bugun = (main) => {
   left.append(h('section', { class: 'session' }, h('h2', null, 'Antrenman'), h('p', { class: 'muted', text: 'Ne kadar vaktin var? Süreyi her seferinde sen seçersin; ara verdiğin günler sorun değil.' }), seg([[5, '5 dk'], [15, '15 dk'], [30, '30 dk']], 15, (v) => { mins = v; desc.textContent = SESSION_DESC[v]; }, 'Süre'), desc,
     h('div', { class: 'actions' }, sess ? btn(`Kaldığın yerden devam et (adım ${sess.i + 1}/${sess.steps.length})`, () => go('antrenman'), 'primary') : null, btn(sess ? 'Yeni antrenman başlat' : 'Antrenmanı başlat', () => { S.session = buildSession(mins); Store.touch(); go('antrenman'); }, sess ? '' : 'primary'))));
   const active = Object.keys(S.days).filter((d) => +d > t - 30).length;
-  left.append(h('section', { class: 'stats' }, stat(S.profile.rating, 'bulmaca puanın'), stat(dueIds().length, 'tekrar bekleyen bulmaca'), stat(active, 'son 30 günde çalıştığın gün')));
+  left.append(h('section', { class: 'stats' }, stat(S.profile.rating, 'bulmaca puanın'), stat(dueTodayIds().length, 'bugünkü tekrar'), stat(active, 'son 30 günde çalıştığın gün')));
+  const mineNew = S.personal.filter((x) => S.srs[x.id] && !S.srs[x.id].n).length;
+  if (mineNew) left.append(h('section', { class: 'callout' }, h('h2', null, 'Kendi hatalarından bulmacalar'), h('p', null, `Oyunlarından çıkan ${mineNew} pozisyon seni bekliyor. Oyunda kaçırdığın hamleyi bu kez bul.`), h('div', { class: 'actions' }, btn('Çözmeye başla', () => go('bulmaca-benim')))));
   const nl = nextLesson(); if (nl) left.append(h('section', null, h('h2', null, 'Sıradaki ders'), h('a', { class: 'lesson-link', href: '#ders-' + nl.id }, h('span', { class: 'l-title', text: nl.title }), h('span', { class: 'l-meta', text: `${MODULES[nl.module]}, ${nl.minutes} dk` }))));
   const wk = weakThemes(); if (wk.length) left.append(h('section', null, h('h2', null, 'Zayıf olduğun konular'), h('ul', { class: 'weak' }, wk.map((w) => h('li', null, h('span', { text: THEME_TR[w.t] || w.t }), h('span', { class: 'muted small', text: `%${Math.round(w.acc * 100)} isabet, ${w.n} bulmaca` }), btn('Çalış', () => go('bulmaca-' + w.t), 'ghost'))))));
   right.append(h('h2', null, 'Günün pozisyonu'));
@@ -1976,7 +1981,7 @@ VIEWS.test = (main) => {
 VIEWS.bulmaca = (main, arg) => {
   const S = Store.s, mode = !arg ? 'mixed' : arg === 'tekrar' ? 'due' : arg === 'benim' ? 'mine' : arg === 'konu' ? 'pick' : THEME_TR[arg] ? 'theme' : 'mixed';
   main.append(h('header', { class: 'page-head' }, h('h1', null, mode === 'theme' ? THEME_TR[arg] : 'Bulmacalar'), h('p', { class: 'lead', text: `Bulmaca puanın ${S.profile.rating}. Yanlış ya da yavaş çözdüklerin artan aralıklarla geri gelir.` })));
-  main.append(h('div', { class: 'field' }, seg([['mixed', 'Karışık'], ['due', `Tekrar (${dueIds().length})`], ['pick', 'Konuya göre'], ['mine', `Hatalarım (${S.personal.length})`]], mode === 'theme' ? 'pick' : mode, (v) => go(v === 'mixed' ? 'bulmaca' : v === 'due' ? 'bulmaca-tekrar' : v === 'pick' ? 'bulmaca-konu' : 'bulmaca-benim'), 'Bulmaca türü')));
+  main.append(h('div', { class: 'field' }, seg([['mixed', 'Karışık'], ['due', `Tekrar (${dueTodayIds().length})`], ['pick', 'Konuya göre'], ['mine', `Hatalarım (${S.personal.length})`]], mode === 'theme' ? 'pick' : mode, (v) => go(v === 'mixed' ? 'bulmaca' : v === 'due' ? 'bulmaca-tekrar' : v === 'pick' ? 'bulmaca-konu' : 'bulmaca-benim'), 'Bulmaca türü')));
   if (mode === 'pick') {
     const counts = {}; PUZ.forEach((p) => p.themes.forEach((t) => { if (TRACK.includes(t)) counts[t] = (counts[t] || 0) + 1; }));
     const list = TRACK.filter((t) => counts[t] >= 5).sort((a, b) => THEME_TR[a].localeCompare(THEME_TR[b], 'tr'));
@@ -1988,7 +1993,7 @@ VIEWS.bulmaca = (main, arg) => {
   const pr = PuzzleRunner(host, {
     next: () => q.next(),
     onResult: (p, good, secs) => { recordPuzzle(p, good, secs); if (!good) q.fail(p.id); n++; if (good) ok++; tally.textContent = `Bu oturumda ${ok}/${n} doğru. Puanın ${Store.s.profile.rating}.`; },
-    onEmpty: (acts, msg) => { msg.className = 'msg'; msg.textContent = mode === 'due' ? 'Tekrar bekleyen bulmaca kalmadı.' : mode === 'mine' ? 'Henüz kendi oyunlarından bulmaca yok. Bir oyunu inceleyip hatalarını buraya ekleyebilirsin.' : 'Bu grupta bulmaca kalmadı.'; acts.innerHTML = ''; acts.append(btn(mode === 'mine' ? 'Analize git' : 'Karışık bulmacalar', () => go(mode === 'mine' ? 'analiz' : 'bulmaca'), 'primary')); },
+    onEmpty: (acts, msg) => { msg.className = 'msg'; msg.textContent = mode === 'due' ? (dueIds().length ? `Bugünkü tekrarlar bitti. Kalan ${dueIds().length} tekrar sonraki günlere yayılacak.` : 'Tekrar bekleyen bulmaca kalmadı.') : mode === 'mine' ? 'Henüz kendi oyunlarından bulmaca yok. Bir oyunu inceleyip hatalarını buraya ekleyebilirsin.' : 'Bu grupta bulmaca kalmadı.'; acts.innerHTML = ''; acts.append(btn(mode === 'mine' ? 'Analize git' : 'Karışık bulmacalar', () => go(mode === 'mine' ? 'analiz' : 'bulmaca'), 'primary')); },
   });
   return () => pr.destroy();
 };
@@ -2567,8 +2572,21 @@ VIEWS.ilerleme = (main) => {
 const _ayarlar3 = VIEWS.ayarlar;
 VIEWS.ayarlar = (main) => { _ayarlar3(main); main.append(h('p', { class: 'small muted', text: SF.ready ? 'Analiz motoru: Stockfish 19, cihazında çalışıyor.' : 'Analiz motoru: yerleşik hafif motor. iPhone uygulamasında Stockfish 19 kullanılır.' })); };
 
+// finished games are reviewed in the background so their mistakes become puzzles without a button press;
+// skipped while a board that needs the engine is open, so the threat hunt and the coach stay fast
+let autoBusy = false;
+async function autoReview() {
+  if (autoBusy) return; autoBusy = true; let added = 0;
+  try {
+    for (const g of (Store.s.games || []).filter((x) => !x.review)) {
+      if (['oyna', 'analiz', 'antrenman'].includes(parseHash().name)) { setTimeout(autoReview, 60000); break; }
+      const r = await reviewGame(g); if (r) added += r.added;
+    }
+  } finally { autoBusy = false; }
+  if (added) { toast(`Oyunlarından ${added} yeni hata bulmacası çıktı. Bugün ekranında.`); if (parseHash().name === 'bugun') render(); }
+}
 window.HH.SF = SF; window.HH.detectThreat = detectThreat; window.HH.reviewGame = reviewGame;
-SF.init().then((ok) => { if (ok) { const sn = $('#sync-note'); if (sn) sn.textContent += ', Stockfish açık'; } });
+SF.init().then((ok) => { if (ok) { const sn = $('#sync-note'); if (sn) sn.textContent += ', Stockfish açık'; } setTimeout(autoReview, 3000); });
 
 </script>
 <script>
