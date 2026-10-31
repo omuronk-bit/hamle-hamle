@@ -100,8 +100,8 @@ section{ margin:0 0 30px; }
 .coach-btn{ display:none !important; }
 body.has-coach .coach-btn{ display:inline-flex !important; }
 .coach-dot{ width:8px; height:8px; border-radius:50%; background:var(--pen); flex:none; }
-.seg{ display:inline-flex; flex-wrap:wrap; border:1px solid var(--line); border-radius:var(--r-s); overflow:hidden; background:var(--surface); }
-.seg button{ border:0; background:transparent; padding:9px 14px; cursor:pointer; color:var(--ink-2); font-weight:500; border-right:1px solid var(--line); }
+.seg{ display:inline-flex; flex-wrap:nowrap; max-width:100%; overflow-x:auto; scrollbar-width:none; border:1px solid var(--line); border-radius:var(--r-s); overflow:hidden; background:var(--surface); }
+.seg button{ white-space:nowrap; flex:none; border:0; background:transparent; padding:9px 14px; cursor:pointer; color:var(--ink-2); font-weight:500; border-right:1px solid var(--line); }
 .seg button:last-child{ border-right:0; }
 .seg button[aria-pressed="true"]{ background:var(--ink); color:var(--paper); }
 .field{ margin:0 0 18px; }
@@ -151,9 +151,19 @@ textarea{ width:100%; min-height:150px; padding:12px; border:1px solid var(--lin
 /* side panel */
 .side{ min-width:0; }
 .capbar{ display:flex; align-items:center; gap:8px; min-height:28px; margin:4px 0; font-size:.875rem; color:var(--ink-2); }
-.cap-p{ display:inline-flex; } .cap-p svg{ width:26px; height:26px; margin-right:-7px; }
+.cap-p{ display:inline-flex; } .cap-p svg{ width:30px; height:30px; margin-right:-8px; }
 .cap-adv{ font-weight:600; color:var(--ink); margin-left:6px; }
-.lastmv{ margin:4px 0 0; } .lastmv p{ margin:2px 0; }
+.lastmv{ margin:2px 0 0; } .lastmv p{ margin:2px 0; }
+.gamebar{ display:flex; align-items:center; gap:6px; margin:6px 0 2px; }
+.gamebar .btn{ min-height:44px; padding:9px 10px; flex:none; }
+.gamebar .coach-btn{ flex:1 1 0; min-width:0; white-space:nowrap; }
+.gamebar .more{ font-size:1.3rem; line-height:1; width:44px; padding:0; }
+.board-col > .msg{ margin:4px 0 0; }
+.page-head.compact{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; margin:0 0 10px; }
+.page-head.compact h1{ font-size:1.35rem; margin:0; }
+.page-head.compact .kicker{ margin:0; }
+.menu-list{ display:grid; gap:8px; margin-top:12px; }
+@media (display-mode: standalone){ .topbar{ display:none; } }
 .side > h2:first-child{ margin-top:0; }
 .turn-line{ display:flex; align-items:center; gap:10px; font-size:1.05rem; margin:0 0 6px; }
 .swatch{ width:18px; height:18px; border-radius:50%; border:1.5px solid var(--ink); flex:none; }
@@ -1712,19 +1722,30 @@ function moveSentence(r, mine) {
 function GameScreen(main, G) {
   const game = new C.Game(G.start); for (const u of G.moves) if (!game.move(u)) break;
   const opp = G.color === 'w' ? 'b' : 'w';
-  main.append(h('header', { class: 'page-head' }, h('p', { class: 'kicker', text: `Seviye ${G.level}: ${C.LEVELS[G.level].name}. Kontrol modu ${({ off: 'kapalı', warn: 'uyarı', full: 'tam', coach: 'antrenör' })[G.mode]}.` }), h('h1', null, 'Bota karşı')));
+  main.append(h('header', { class: 'page-head compact' }, h('h1', null, 'Bota karşı'), h('span', { class: 'kicker', text: `Seviye ${G.level} · ${C.LEVELS[G.level].name} · ${({ off: 'serbest', warn: 'hatada durdurur', full: 'her şeyi gösterir', coach: 'tehdit sorar' })[G.mode]}` })));
   const { bEl, side } = playLayout(main), board = new Board(bEl, { orientation: G.color, movable: G.color });
+  // everything needed during play sits right under the board so the game fits one phone screen
   const capTop = h('div', { class: 'capbar' }), capBot = h('div', { class: 'capbar' }), lastEl = h('div', { class: 'lastmv', 'aria-live': 'polite' });
-  bEl.insertBefore(capTop, bEl.firstChild); bEl.append(capBot, lastEl);
+  const status = h('p', { class: 'msg', 'aria-live': 'polite' }), huntBox = h('div'), bar = h('div', { class: 'gamebar' });
+  bEl.insertBefore(capTop, bEl.firstChild); bEl.append(capBot, huntBox, bar, status, lastEl);
+  const startMat = new C.Position(game.startFen).material(), startD = G.color === 'w' ? startMat.w - startMat.b : startMat.b - startMat.w;
   function drawAround() {
-    const fen = game.fen(), m = game.pos.material(), d = G.color === 'w' ? m.w - m.b : m.b - m.w;
+    const fen = game.fen(), m = game.pos.material(), d = (G.color === 'w' ? m.w - m.b : m.b - m.w) - startD; // only what changed in this game
     drawCapBar(capTop, 'Bot aldı:', capturedBy(game.startFen, fen, opp), G.color, -d);
     drawCapBar(capBot, 'Sen aldın:', capturedBy(game.startFen, fen, G.color), opp, d);
     lastEl.innerHTML = '';
     game.history.slice(-2).reverse().forEach((r, i) => { const mine = r.color === G.color; lastEl.append(h('p', { class: i ? 'small muted' : '' }, h('strong', null, (i ? 'Önceki, ' : 'Son hamle, ') + (mine ? 'sen: ' : 'bot: ')), moveSentence(r, mine))); });
   }
-  const status = h('p', { class: 'msg', 'aria-live': 'polite' }), huntBox = h('div'), cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div'), acts = h('div', { class: 'actions' });
-  side.append(status, huntBox, cctBox, endBox, sheet, acts);
+  const cctBox = h('div'), sheet = h('div', { class: 'sheet' }), endBox = h('div');
+  side.append(cctBox, endBox, sheet);
+  const PRESETS = [{ label: 'En iyi hamle ne, neden?', deep: true, q: 'Bu pozisyonda en iyi hamle ne ve neden? Motorun en iyi hamlesini sade bir dille açıkla: hangi taş nereye gider, ne işe yarar (neyi tehdit eder, neyi korur ya da engeller). Rakibin bir tehdidi varsa önce onu söyle. Akla gelen ama kötü olan bir alternatifi de kısaca, neden kötü olduğuyla anlat.' }, { label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }];
+  const coachCtx = (auto) => ({ fen: game.fen(), title: 'Oyun', presets: PRESETS, autoAsk: auto ? PRESETS[0] : null });
+  function moreMenu() {
+    const m = modal('Oyun');
+    m.append(h('div', { class: 'menu-list' },
+      btn('Tahtayı çevir', () => { m.close(); board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'); }),
+      btn('Teslim ol', async () => { m.close(); if (await askConfirm('Teslim olursan oyun kaybedilmiş sayılır.', 'Teslim ol')) finishGame('loss', 'resign'); })));
+  }
   let thinking = false, alive = true, inner = null; const show = { opp: false, me: false };
   const hunt = (G.mode === 'coach' && typeof HuntController === 'function') ? HuntController(board, huntBox, G, () => game, () => refresh()) : null;
   const lastMove = () => { const r = game.history[game.history.length - 1]; return r ? [r.from, r.to] : null; };
@@ -1743,11 +1764,11 @@ function GameScreen(main, G) {
     board.o.movable = (ut && !(hunt && hunt.blocking())) ? G.color : 'none';
     board.setPosition(game.fen(), { last: lastMove(), arrows });
     status.className = 'msg';
-    status.textContent = G.over ? resultTitle(G) : thinking ? 'Bot düşünüyor…' : (game.pos.inCheck() ? 'Şah! Sıra sende.' : 'Sıra sende.');
+    status.textContent = G.over ? resultTitle(G) : thinking ? 'Bot düşünüyor…' : (hunt && hunt.blocking()) ? 'Hamleden önce: rakibin tehdidini bul.' : (game.pos.inCheck() ? 'Şah! Sıra sende.' : 'Sıra sende.');
     drawSheet(sheet, game.history, game.startFen, -1, null, null); sheet.scrollTop = sheet.scrollHeight;
     drawAround();
-    acts.innerHTML = '';
-    if (!G.over) acts.append(btn('Geri al', takeback, 'ghost'), btn('Tahtayı çevir', () => board.setOrientation(board.o.orientation === 'w' ? 'b' : 'w'), 'ghost'), btn('Teslim ol', async () => { if (await askConfirm('Teslim olursan oyun kaybedilmiş sayılır.', 'Teslim ol')) finishGame('loss', 'resign'); }, 'ghost'), coachBtn(() => ({ fen: game.fen(), title: 'Oyun', presets: [{ label: 'En iyi hamle ne, neden?', deep: true, q: 'Bu pozisyonda en iyi hamle ne ve neden? Motorun en iyi hamlesini sade bir dille açıkla: hangi taş nereye gider, ne işe yarar (neyi tehdit eder, neyi korur ya da engeller). Rakibin bir tehdidi varsa önce onu söyle. Akla gelen ama kötü olan bir alternatifi de kısaca, neden kötü olduğuyla anlat.' }, { label: 'Rakibin tehdidi ne?', q: 'Rakibin şu anki tehditleri neler? Neye dikkat etmeliyim?' }, { label: 'Plan ne olmalı?', q: 'Bu pozisyonda iyi bir plan ne olabilir? Somut bir hamleyle başla.' }] })));
+    bar.innerHTML = ''; bar.hidden = G.over;
+    if (!G.over) bar.append(btn('Geri al', takeback, 'ghost'), coachBtn(() => coachCtx(true), 'En iyi hamle?'), coachBtn(() => coachCtx(false)), h('button', { type: 'button', class: 'btn ghost more', 'aria-label': 'Diğer: tahtayı çevir, teslim ol', onclick: moreMenu, text: '⋯' }));
   }
   function warnDialog(w, before, uci) {
     return new Promise((resolve) => {
@@ -1955,7 +1976,7 @@ VIEWS.test = (main) => {
 VIEWS.bulmaca = (main, arg) => {
   const S = Store.s, mode = !arg ? 'mixed' : arg === 'tekrar' ? 'due' : arg === 'benim' ? 'mine' : arg === 'konu' ? 'pick' : THEME_TR[arg] ? 'theme' : 'mixed';
   main.append(h('header', { class: 'page-head' }, h('h1', null, mode === 'theme' ? THEME_TR[arg] : 'Bulmacalar'), h('p', { class: 'lead', text: `Bulmaca puanın ${S.profile.rating}. Yanlış ya da yavaş çözdüklerin artan aralıklarla geri gelir.` })));
-  main.append(h('div', { class: 'field' }, seg([['mixed', 'Karışık'], ['due', `Tekrar (${dueIds().length})`], ['pick', 'Konuya göre'], ['mine', `Benim hatalarım (${S.personal.length})`]], mode === 'theme' ? 'pick' : mode, (v) => go(v === 'mixed' ? 'bulmaca' : v === 'due' ? 'bulmaca-tekrar' : v === 'pick' ? 'bulmaca-konu' : 'bulmaca-benim'), 'Bulmaca türü')));
+  main.append(h('div', { class: 'field' }, seg([['mixed', 'Karışık'], ['due', `Tekrar (${dueIds().length})`], ['pick', 'Konuya göre'], ['mine', `Hatalarım (${S.personal.length})`]], mode === 'theme' ? 'pick' : mode, (v) => go(v === 'mixed' ? 'bulmaca' : v === 'due' ? 'bulmaca-tekrar' : v === 'pick' ? 'bulmaca-konu' : 'bulmaca-benim'), 'Bulmaca türü')));
   if (mode === 'pick') {
     const counts = {}; PUZ.forEach((p) => p.themes.forEach((t) => { if (TRACK.includes(t)) counts[t] = (counts[t] || 0) + 1; }));
     const list = TRACK.filter((t) => counts[t] >= 5).sort((a, b) => THEME_TR[a].localeCompare(THEME_TR[b], 'tr'));
@@ -2605,22 +2626,23 @@ function openCoachChat(ctx, mode) {
   const stopB = btn('Durdur', () => { if (ctl) ctl.abort(); }, 'ghost'); stopB.hidden = true;
   const thread = []; let ctl = null, tier = true;
   const factsP = coachFacts(ctx.fen).catch(() => 'FEN: ' + ctx.fen);
-  async function ask(q, quick) {
+  async function ask(q, quick, label) {
     if (!q || ctl) return;
     if (!thread.length) tier = quick;
     const f = await factsP;
     thread.push({ role: 'user', content: thread.length ? q : `POZİSYON VERİLERİ\n${f}${ctx.extra ? '\n' + ctx.extra : ''}\n\nSORU: ${q}` });
-    const aEl = h('div', { class: 'chat-a', text: 'Düşünüyor…' }); log.append(h('p', { class: 'chat-q', text: q }), aEl); ta.value = ''; presets.hidden = true;
+    const aEl = h('div', { class: 'chat-a', text: 'Düşünüyor…' }); log.append(h('p', { class: 'chat-q', text: label || q }), aEl); ta.value = ''; presets.hidden = true;
     const my = new AbortController(); ctl = my; stopB.hidden = false;
     try {
       const t = mode === 'api' ? await apiMessages(COACH_RULES, thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal) : await sampleChat(thread, tier, (x) => { aEl.textContent = x; log.scrollTop = log.scrollHeight; }, my.signal);
-      aEl.textContent = t || 'Boş cevap geldi; tekrar sor.'; thread.push({ role: 'assistant', content: t || '' }); if (t) logAnswer(ctx, q, t);
+      aEl.textContent = t || 'Boş cevap geldi; tekrar sor.'; thread.push({ role: 'assistant', content: t || '' }); if (t) logAnswer(ctx, label || q, t);
     } catch (e) { thread.pop(); aEl.textContent = mode === 'api' ? (e && e.name === 'AbortError' ? 'Durduruldu.' : apiErrorText(e)) : sampleErrorText(e); }
     finally { ctl = null; stopB.hidden = true; ta.placeholder = 'Devam sorusu sor (ör. “Peki fili geri çekseydim?”)'; log.scrollTop = log.scrollHeight; }
   }
-  (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, !p.deep))));
+  (ctx.presets || []).forEach((p) => presets.append(btn(p.label, () => ask(p.q, !p.deep, p.label))));
   m.append(presets, log, h('div', { class: 'field' }, ta), h('div', { class: 'actions' }, btn('Sor', () => ask(ta.value.trim(), false), 'primary'), stopB));
   m.onclose = () => { if (ctl) ctl.abort(); };
+  if (ctx.autoAsk) ask(ctx.autoAsk.q, !ctx.autoAsk.deep, ctx.autoAsk.label); // one tap from the game bar
 }
 
 // without a key: hand the question to Claude (ideally to the user's "Satranç koçum" project)
